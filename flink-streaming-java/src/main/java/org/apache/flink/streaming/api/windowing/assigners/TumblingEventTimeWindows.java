@@ -48,8 +48,10 @@ public class TumblingEventTimeWindows extends WindowAssigner<Object, TimeWindow>
 
 	private final long size;
 
+	// 全局偏移
 	private final long globalOffset;
 
+	// 错位偏移
 	private Long staggerOffset = null;
 
 	private final WindowStagger windowStagger;
@@ -64,9 +66,18 @@ public class TumblingEventTimeWindows extends WindowAssigner<Object, TimeWindow>
 		this.windowStagger = windowStagger;
 	}
 
+	/**
+	 * 分配窗口
+	 * @param element The element to which windows should be assigned.
+	 * @param timestamp The timestamp of the element.
+	 * @param context The {@link WindowAssignerContext} in which the assigner operates.
+	 * @return
+	 */
 	@Override
 	public Collection<TimeWindow> assignWindows(Object element, long timestamp, WindowAssignerContext context) {
+		// 如果传入的eventTime大于最小值
 		if (timestamp > Long.MIN_VALUE) {
+			//
 			if (staggerOffset == null) {
 				staggerOffset = windowStagger.getStaggerOffset(context.getCurrentProcessingTime(), size);
 			}

@@ -345,6 +345,11 @@ public class DataStream<T> {
 		return keyBy(new Keys.ExpressionKeys<>(fields, getType()));
 	}
 
+	/**
+	 * 根据key的hashcode%线程数分组
+	 * @param keys
+	 * @return
+	 */
 	private KeyedStream<T, Tuple> keyBy(Keys<T> keys) {
 		return new KeyedStream<>(this, clean(KeySelectorUtil.getSelectorForKeys(keys,
 				getType(), getExecutionConfig())));

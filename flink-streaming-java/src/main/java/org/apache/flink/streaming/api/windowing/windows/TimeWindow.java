@@ -268,6 +268,7 @@ public class TimeWindow extends Window {
 	 * @return window start
 	 */
 	public static long getWindowStartWithOffset(long timestamp, long offset, long windowSize) {
+		// 相当于求 windowSize的整数倍
 		return timestamp - (timestamp - offset + windowSize) % windowSize;
 	}
 }
