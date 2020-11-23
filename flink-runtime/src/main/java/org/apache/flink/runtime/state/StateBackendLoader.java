@@ -38,6 +38,7 @@ import java.io.IOException;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
+ * 状态后端
  * This class contains utility methods to load state backends from configurations.
  */
 public class StateBackendLoader {
@@ -47,12 +48,15 @@ public class StateBackendLoader {
 	// ------------------------------------------------------------------------
 
 	/** The shortcut configuration name for the MemoryState backend that checkpoints to the JobManager */
+	// 状态存储在jobmanager 内存中
 	public static final String MEMORY_STATE_BACKEND_NAME = "jobmanager";
 
 	/** The shortcut configuration name for the FileSystem State backend */
+	// 状态存储在文件系统中
 	public static final String FS_STATE_BACKEND_NAME = "filesystem";
 
 	/** The shortcut configuration name for the RocksDB State Backend */
+	// 状态存储在rocksdb
 	public static final String ROCKSDB_STATE_BACKEND_NAME = "rocksdb";
 
 	// ------------------------------------------------------------------------
@@ -95,6 +99,7 @@ public class StateBackendLoader {
 		checkNotNull(config, "config");
 		checkNotNull(classLoader, "classLoader");
 
+		// 从配置获取状态后端名称
 		final String backendName = config.get(CheckpointingOptions.STATE_BACKEND);
 		if (backendName == null) {
 			return null;
@@ -103,6 +108,7 @@ public class StateBackendLoader {
 		// by default the factory class is the backend name 
 		String factoryClassName = backendName;
 
+		// 根据不同的状态后端创建不同的状态后端
 		switch (backendName.toLowerCase()) {
 			case MEMORY_STATE_BACKEND_NAME:
 				MemoryStateBackend memBackend = new MemoryStateBackendFactory().createFromConfig(config, classLoader);

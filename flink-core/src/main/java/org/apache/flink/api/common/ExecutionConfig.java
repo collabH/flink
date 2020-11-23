@@ -813,6 +813,7 @@ public class ExecutionConfig implements Serializable, Archiveable<ArchivedExecut
 	}
 
 	/**
+	 * 注册给定类型到kryo序列化器中
 	 * Registers the given type with a Kryo Serializer.
 	 *
 	 * Note that the serializer instance must be serializable (as defined by java.io.Serializable),

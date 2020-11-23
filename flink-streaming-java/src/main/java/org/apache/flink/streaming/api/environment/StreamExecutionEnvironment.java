@@ -133,6 +133,7 @@ public class StreamExecutionEnvironment {
 	private static final long DEFAULT_NETWORK_BUFFER_TIMEOUT = 100L;
 
 	/**
+	 * 上下文环境
 	 * The environment of the context (local by default, cluster if invoked through command line).
 	 */
 	private static StreamExecutionEnvironmentFactory contextEnvironmentFactory = null;
@@ -141,36 +142,55 @@ public class StreamExecutionEnvironment {
 	private static final ThreadLocal<StreamExecutionEnvironmentFactory> threadLocalContextEnvironmentFactory = new ThreadLocal<>();
 
 	/** The default parallelism used when creating a local environment. */
+	// 默认本地并行度为当前机器core数
 	private static int defaultLocalParallelism = Runtime.getRuntime().availableProcessors();
 
 	// ------------------------------------------------------------------------
 
 	/** The execution configuration for this environment. */
+	// 当前环境执行配置，包含并行度、序列化方式等
 	private final ExecutionConfig config = new ExecutionConfig();
 
 	/** Settings that control the checkpointing behavior. */
+	// 配置控制checkpoint行为
 	private final CheckpointConfig checkpointCfg = new CheckpointConfig();
 
+	/**
+	 * transformation算子集合，记录从基础的transformations到最终transforms的逻辑集合
+	 */
 	protected final List<Transformation<?>> transformations = new ArrayList<>();
 
+	// buffer刷新的频率
 	private long bufferTimeout = DEFAULT_NETWORK_BUFFER_TIMEOUT;
 
+	// 是否开启任务链优化，相同并行度的one-to-one算子会放在同一个task slot中，优化网络io
 	protected boolean isChainingEnabled = true;
 
 	/** The state backend used for storing k/v state and state snapshots. */
+	// 默认状态后端，用于存储kv状态和状态快照
 	private StateBackend defaultStateBackend;
 
-	/** The time characteristic used by the data streams. */
+	/** The time characteristic used by the data streams.
+	 * 默认时间语义：processing time
+	 * */
 	private TimeCharacteristic timeCharacteristic = DEFAULT_TIME_CHARACTERISTIC;
 
+	// 分布式缓存文件
 	protected final List<Tuple2<String, DistributedCache.DistributedCacheEntry>> cacheFile = new ArrayList<>();
 
+	/**
+	 * // executor服务加载器，加载yarn、local、k8s等相关执行器
+	 */
 	private final PipelineExecutorServiceLoader executorServiceLoader;
 
 	private final Configuration configuration;
 
+	// 用户指定的累加载器
 	private final ClassLoader userClassloader;
 
+	/**
+	 * 任务监听器，监听job状态的变化
+	 */
 	private final List<JobListener> jobListeners = new ArrayList<>();
 
 	// --------------------------------------------------------------------------------------------
@@ -203,6 +223,7 @@ public class StreamExecutionEnvironment {
 	public StreamExecutionEnvironment(
 			final Configuration configuration,
 			final ClassLoader userClassloader) {
+		// 默认使用JDK SPI方式的加载执行工厂
 		this(new DefaultExecutorServiceLoader(), configuration, userClassloader);
 	}
 
@@ -218,6 +239,7 @@ public class StreamExecutionEnvironment {
 			final PipelineExecutorServiceLoader executorServiceLoader,
 			final Configuration configuration,
 			final ClassLoader userClassloader) {
+
 		this.executorServiceLoader = checkNotNull(executorServiceLoader);
 		this.configuration = checkNotNull(configuration);
 		this.userClassloader = userClassloader == null ? getClass().getClassLoader() : userClassloader;
@@ -231,6 +253,8 @@ public class StreamExecutionEnvironment {
 		//
 		// Given this, it is safe to overwrite the execution config default values here because all other ways assume
 		// that the env is already instantiated so they will overwrite the value passed here.
+		// job的配置或一个operator能够指定一下，算子并行度、重启策略、在这里传递的配置中
+		// env相关的配置包含buffertimeout、并行度、时间语义、checkpoint等
 		this.configure(this.configuration, this.userClassloader);
 	}
 
@@ -282,6 +306,7 @@ public class StreamExecutionEnvironment {
 	}
 
 	/**
+	 * 设置这个程序的最大并行度，包含上限
 	 * Sets the maximum degree of parallelism defined for the program. The upper limit (inclusive)
 	 * is Short.MAX_VALUE.
 	 *
@@ -326,6 +351,11 @@ public class StreamExecutionEnvironment {
 	}
 
 	/**
+	 * buffer的刷新频率，保证数据的时效性
+	 * 一个正整数会触发该整数定期刷新
+	 * 0在每条记录后触发刷新，从而最大程度地减少了等待时间
+	 * -1仅在输出缓冲区已满时触发刷新，从而最大化吞吐量
+	 *
 	 * Sets the maximum time frequency (milliseconds) for the flushing of the
 	 * output buffers. By default the output buffers flush frequently to provide
 	 * low latency and to aid smooth developer experience. Setting the parameter
@@ -362,6 +392,7 @@ public class StreamExecutionEnvironment {
 	}
 
 	/**
+	 * 为流操作关闭operator链 任务链运行非shuffle算子能够合并在相同jvm实例的thread，充分避免序列化和反序列化操作
 	 * Disables operator chaining for streaming operators. Operator chaining
 	 * allows non-shuffle operations to be co-located in the same thread fully
 	 * avoiding serialization and de-serialization.
@@ -477,6 +508,7 @@ public class StreamExecutionEnvironment {
 	}
 
 	/**
+	 * 开启checkpoint使用500ms间隔
 	 * Enables checkpointing for the streaming job. The distributed state of the streaming
 	 * dataflow will be periodically snapshotted. In case of a failure, the streaming
 	 * dataflow will be restarted from the latest completed checkpoint. This method selects
@@ -584,6 +616,7 @@ public class StreamExecutionEnvironment {
 	}
 
 	/**
+	 * 设置任务重启策略
 	 * Sets the restart strategy configuration. The configuration specifies which restart strategy
 	 * will be used for the execution graph in case of a restart.
 	 *
@@ -643,6 +676,7 @@ public class StreamExecutionEnvironment {
 	// --------------------------------------------------------------------------------------------
 
 	/**
+	 * 添加一个新的kyro默认序列化器在运行中
 	 * Adds a new Kryo default serializer to the Runtime.
 	 *
 	 * <p>Note that the serializer instance must be serializable (as defined by
@@ -728,6 +762,8 @@ public class StreamExecutionEnvironment {
 	// --------------------------------------------------------------------------------------------
 
 	/**
+	 * 设置流的时间语义，默认为ProcessingTime，设置为eventTime的话默认waterMarker生成间隔为200ms，如果不能满足应用可以通过
+	 * ExecutionConfig#setAutoWatermarkInterval(long)设定
 	 * Sets the time characteristic for all streams create from this environment, e.g., processing
 	 * time, event time, or ingestion time.
 	 *
@@ -792,6 +828,11 @@ public class StreamExecutionEnvironment {
 		checkpointCfg.configure(configuration);
 	}
 
+	/**
+	 * 注册自定义监听器
+	 * @param classLoader
+	 * @param listeners
+	 */
 	private void registerCustomListeners(final ClassLoader classLoader, final List<String> listeners) {
 		for (String listener : listeners) {
 			try {
@@ -806,6 +847,7 @@ public class StreamExecutionEnvironment {
 
 	private StateBackend loadStateBackend(ReadableConfig configuration, ClassLoader classLoader) {
 		try {
+			// 从配置中加载状态后端
 			return StateBackendLoader.loadStateBackendFromConfig(
 				configuration,
 				classLoader,
@@ -819,6 +861,7 @@ public class StreamExecutionEnvironment {
 	// Data stream creations
 	// --------------------------------------------------------------------------------------------
 
+	// todo 数据流操作
 	/**
 	 * Creates a new data stream that contains a sequence of numbers. This is a parallel source,
 	 * if you manually set the parallelism to {@code 1}

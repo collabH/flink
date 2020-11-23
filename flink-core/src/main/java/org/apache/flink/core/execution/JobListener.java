@@ -24,6 +24,10 @@ import org.apache.flink.api.common.JobExecutionResult;
 import javax.annotation.Nullable;
 
 /**
+ * 通知了特定作业状态已更改，该监听器应首先由执行环境的#registerJobListener注册。
+ * 强烈建议不要在回调内部执行任何阻止操作。 如果阻塞线程，则可能会阻塞环境execute方法的调用者。
+ *
+ *
  * A listener that is notified on specific job status changed, which should be firstly
  * registered by {@code #registerJobListener} of execution environments.
  *

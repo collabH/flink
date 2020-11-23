@@ -34,6 +34,10 @@ import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
+ * Transformation表示创建DataStream的操作。 每个DataStream都有一个基础Transformation ，该Transformation是该DataStream的起源。
+ * API操作（例如DataStream＃map）在其下方创建一棵Transformation树。 当要执行流程序时，使用StreamGraphGenerator将此图转换为StreamGraph。
+ * Transformation不一定与运行时的物理操作相对应。 某些操作仅是逻辑概念。 例如union，split/select和partitioning操作。
+ *
  * A {@code Transformation} represents the operation that creates a
  * DataStream. Every DataStream has an underlying
  * {@code Transformation} that is the origin of said DataStream.
@@ -118,6 +122,7 @@ public abstract class Transformation<T> {
 	// trying to change the output type.
 	protected boolean typeUsed;
 
+	// 当前算子并行度
 	private int parallelism;
 
 	/**
@@ -158,6 +163,9 @@ public abstract class Transformation<T> {
 
 	protected long bufferTimeout = -1;
 
+	/**
+	 * slot共享，为算子放在指定的slot的group中
+	 */
 	private String slotSharingGroup;
 
 	@Nullable
@@ -367,6 +375,7 @@ public abstract class Transformation<T> {
 	}
 
 	/**
+	 * 如果没有reblance算子的话，相同group名字的在同个taskmanager的slot下
 	 * Sets the slot sharing group of this transformation. Parallel instances of operations that
 	 * are in the same slot sharing group will be co-located in the same TaskManager slot, if
 	 * possible.

@@ -20,7 +20,6 @@ package org.apache.flink.core.execution;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.configuration.Configuration;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +34,7 @@ import java.util.stream.StreamSupport;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
+ * 默认实现 PipelineExecutorServiceLoader，使用java服务发现的方式发现可用的PipelineExecutorFactory
  * The default implementation of the {@link PipelineExecutorServiceLoader}. This implementation uses
  * Java service discovery to find the available {@link PipelineExecutorFactory executor factories}.
  */
@@ -51,10 +51,13 @@ public class DefaultExecutorServiceLoader implements PipelineExecutorServiceLoad
 	public PipelineExecutorFactory getExecutorFactory(final Configuration configuration) {
 		checkNotNull(configuration);
 
+		// 使用Java SPI方式加载META-INF/services实现PipelineExecutorFactory的实现类
 		final ServiceLoader<PipelineExecutorFactory> loader =
-				ServiceLoader.load(PipelineExecutorFactory.class);
+			ServiceLoader.load(PipelineExecutorFactory.class);
 
+		// 存储兼容提供的配置的工厂，判断是否兼容execution.target配置
 		final List<PipelineExecutorFactory> compatibleFactories = new ArrayList<>();
+		// 遍历所有PipelineExecutorFactory实现类
 		final Iterator<PipelineExecutorFactory> factories = loader.iterator();
 		while (factories.hasNext()) {
 			try {
@@ -71,11 +74,12 @@ public class DefaultExecutorServiceLoader implements PipelineExecutorServiceLoad
 			}
 		}
 
+		//execution.target的配置只能有一个兼容配置
 		if (compatibleFactories.size() > 1) {
 			final String configStr =
-					configuration.toMap().entrySet().stream()
-							.map(e -> e.getKey() + "=" + e.getValue())
-							.collect(Collectors.joining("\n"));
+				configuration.toMap().entrySet().stream()
+					.map(e -> e.getKey() + "=" + e.getValue())
+					.collect(Collectors.joining("\n"));
 
 			throw new IllegalStateException("Multiple compatible client factories found for:\n" + configStr + ".");
 		}
@@ -90,9 +94,9 @@ public class DefaultExecutorServiceLoader implements PipelineExecutorServiceLoad
 	@Override
 	public Stream<String> getExecutorNames() {
 		final ServiceLoader<PipelineExecutorFactory> loader =
-				ServiceLoader.load(PipelineExecutorFactory.class);
+			ServiceLoader.load(PipelineExecutorFactory.class);
 
 		return StreamSupport.stream(loader.spliterator(), false)
-				.map(PipelineExecutorFactory::getName);
+			.map(PipelineExecutorFactory::getName);
 	}
 }
