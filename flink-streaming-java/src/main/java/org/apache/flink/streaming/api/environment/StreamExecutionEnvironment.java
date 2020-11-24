@@ -17,6 +17,7 @@
 
 package org.apache.flink.streaming.api.environment;
 
+import com.esotericsoftware.kryo.Serializer;
 import org.apache.flink.annotation.Experimental;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.Public;
@@ -68,20 +69,7 @@ import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
-import org.apache.flink.streaming.api.functions.source.ContinuousFileMonitoringFunction;
-import org.apache.flink.streaming.api.functions.source.ContinuousFileReaderOperatorFactory;
-import org.apache.flink.streaming.api.functions.source.FileMonitoringFunction;
-import org.apache.flink.streaming.api.functions.source.FileProcessingMode;
-import org.apache.flink.streaming.api.functions.source.FileReadFunction;
-import org.apache.flink.streaming.api.functions.source.FromElementsFunction;
-import org.apache.flink.streaming.api.functions.source.FromIteratorFunction;
-import org.apache.flink.streaming.api.functions.source.FromSplittableIteratorFunction;
-import org.apache.flink.streaming.api.functions.source.InputFormatSourceFunction;
-import org.apache.flink.streaming.api.functions.source.ParallelSourceFunction;
-import org.apache.flink.streaming.api.functions.source.SocketTextStreamFunction;
-import org.apache.flink.streaming.api.functions.source.SourceFunction;
-import org.apache.flink.streaming.api.functions.source.StatefulSequenceSource;
-import org.apache.flink.streaming.api.functions.source.TimestampedFileInputSplit;
+import org.apache.flink.streaming.api.functions.source.*;
 import org.apache.flink.streaming.api.graph.StreamGraph;
 import org.apache.flink.streaming.api.graph.StreamGraphGenerator;
 import org.apache.flink.streaming.api.operators.StreamSource;
@@ -93,8 +81,6 @@ import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.SplittableIterator;
 import org.apache.flink.util.StringUtils;
 import org.apache.flink.util.WrappingRuntimeException;
-
-import com.esotericsoftware.kryo.Serializer;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -123,13 +109,19 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 @Public
 public class StreamExecutionEnvironment {
 
-	/** The default name to use for a streaming job if no other name has been specified. */
+	/**
+	 * The default name to use for a streaming job if no other name has been specified.
+	 */
 	public static final String DEFAULT_JOB_NAME = "Flink Streaming Job";
 
-	/** The time characteristic that is used if none other is set. */
+	/**
+	 * The time characteristic that is used if none other is set.
+	 */
 	private static final TimeCharacteristic DEFAULT_TIME_CHARACTERISTIC = TimeCharacteristic.ProcessingTime;
 
-	/** The default buffer timeout (max delay of records in the network stack). */
+	/**
+	 * The default buffer timeout (max delay of records in the network stack).
+	 */
 	private static final long DEFAULT_NETWORK_BUFFER_TIMEOUT = 100L;
 
 	/**
@@ -138,20 +130,28 @@ public class StreamExecutionEnvironment {
 	 */
 	private static StreamExecutionEnvironmentFactory contextEnvironmentFactory = null;
 
-	/** The ThreadLocal used to store {@link StreamExecutionEnvironmentFactory}. */
+	/**
+	 * The ThreadLocal used to store {@link StreamExecutionEnvironmentFactory}.
+	 */
 	private static final ThreadLocal<StreamExecutionEnvironmentFactory> threadLocalContextEnvironmentFactory = new ThreadLocal<>();
 
-	/** The default parallelism used when creating a local environment. */
+	/**
+	 * The default parallelism used when creating a local environment.
+	 */
 	// 默认本地并行度为当前机器core数
 	private static int defaultLocalParallelism = Runtime.getRuntime().availableProcessors();
 
 	// ------------------------------------------------------------------------
 
-	/** The execution configuration for this environment. */
+	/**
+	 * The execution configuration for this environment.
+	 */
 	// 当前环境执行配置，包含并行度、序列化方式等
 	private final ExecutionConfig config = new ExecutionConfig();
 
-	/** Settings that control the checkpointing behavior. */
+	/**
+	 * Settings that control the checkpointing behavior.
+	 */
 	// 配置控制checkpoint行为
 	private final CheckpointConfig checkpointCfg = new CheckpointConfig();
 
@@ -166,13 +166,16 @@ public class StreamExecutionEnvironment {
 	// 是否开启任务链优化，相同并行度的one-to-one算子会放在同一个task slot中，优化网络io
 	protected boolean isChainingEnabled = true;
 
-	/** The state backend used for storing k/v state and state snapshots. */
+	/**
+	 * The state backend used for storing k/v state and state snapshots.
+	 */
 	// 默认状态后端，用于存储kv状态和状态快照
 	private StateBackend defaultStateBackend;
 
-	/** The time characteristic used by the data streams.
+	/**
+	 * The time characteristic used by the data streams.
 	 * 默认时间语义：processing time
-	 * */
+	 */
 	private TimeCharacteristic timeCharacteristic = DEFAULT_TIME_CHARACTERISTIC;
 
 	// 分布式缓存文件
@@ -221,8 +224,8 @@ public class StreamExecutionEnvironment {
 	 */
 	@PublicEvolving
 	public StreamExecutionEnvironment(
-			final Configuration configuration,
-			final ClassLoader userClassloader) {
+		final Configuration configuration,
+		final ClassLoader userClassloader) {
 		// 默认使用JDK SPI方式的加载执行工厂
 		this(new DefaultExecutorServiceLoader(), configuration, userClassloader);
 	}
@@ -236,9 +239,9 @@ public class StreamExecutionEnvironment {
 	 */
 	@PublicEvolving
 	public StreamExecutionEnvironment(
-			final PipelineExecutorServiceLoader executorServiceLoader,
-			final Configuration configuration,
-			final ClassLoader userClassloader) {
+		final PipelineExecutorServiceLoader executorServiceLoader,
+		final Configuration configuration,
+		final ClassLoader userClassloader) {
 
 		this.executorServiceLoader = checkNotNull(executorServiceLoader);
 		this.configuration = checkNotNull(configuration);
@@ -274,8 +277,8 @@ public class StreamExecutionEnvironment {
 	}
 
 	/**
-	* Get the list of cached files that were registered for distribution among the task managers.
-	*/
+	 * Get the list of cached files that were registered for distribution among the task managers.
+	 */
 	public List<Tuple2<String, DistributedCache.DistributedCacheEntry>> getCachedFiles() {
 		return cacheFile;
 	}
@@ -314,13 +317,13 @@ public class StreamExecutionEnvironment {
 	 * defines the number of key groups used for partitioned state.
 	 *
 	 * @param maxParallelism Maximum degree of parallelism to be used for the program.,
-	 *              with 0 < maxParallelism <= 2^15 - 1
+	 *                       with 0 < maxParallelism <= 2^15 - 1
 	 */
 	public StreamExecutionEnvironment setMaxParallelism(int maxParallelism) {
 		Preconditions.checkArgument(maxParallelism > 0 &&
-						maxParallelism <= KeyGroupRangeAssignment.UPPER_BOUND_MAX_PARALLELISM,
-				"maxParallelism is out of bounds 0 < maxParallelism <= " +
-						KeyGroupRangeAssignment.UPPER_BOUND_MAX_PARALLELISM + ". Found: " + maxParallelism);
+				maxParallelism <= KeyGroupRangeAssignment.UPPER_BOUND_MAX_PARALLELISM,
+			"maxParallelism is out of bounds 0 < maxParallelism <= " +
+				KeyGroupRangeAssignment.UPPER_BOUND_MAX_PARALLELISM + ". Found: " + maxParallelism);
 
 		config.setMaxParallelism(maxParallelism);
 		return this;
@@ -355,7 +358,7 @@ public class StreamExecutionEnvironment {
 	 * 一个正整数会触发该整数定期刷新
 	 * 0在每条记录后触发刷新，从而最大程度地减少了等待时间
 	 * -1仅在输出缓冲区已满时触发刷新，从而最大化吞吐量
-	 *
+	 * <p>
 	 * Sets the maximum time frequency (milliseconds) for the flushing of the
 	 * output buffers. By default the output buffers flush frequently to provide
 	 * low latency and to aid smooth developer experience. Setting the parameter
@@ -368,8 +371,7 @@ public class StreamExecutionEnvironment {
 	 *      throughput</li>
 	 * </ul>
 	 *
-	 * @param timeoutMillis
-	 * 		The maximum time between two output flushes.
+	 * @param timeoutMillis The maximum time between two output flushes.
 	 */
 	public StreamExecutionEnvironment setBufferTimeout(long timeoutMillis) {
 		if (timeoutMillis < -1) {
@@ -464,10 +466,8 @@ public class StreamExecutionEnvironment {
 	 * with enabled checkpointing. To override this mechanism, use the
 	 * {@link #enableCheckpointing(long, CheckpointingMode, boolean)} method.
 	 *
-	 * @param interval
-	 *             Time interval between state checkpoints in milliseconds.
-	 * @param mode
-	 *             The checkpointing mode, selecting between "exactly once" and "at least once" guaranteed.
+	 * @param interval Time interval between state checkpoints in milliseconds.
+	 * @param mode     The checkpointing mode, selecting between "exactly once" and "at least once" guaranteed.
 	 */
 	public StreamExecutionEnvironment enableCheckpointing(long interval, CheckpointingMode mode) {
 		checkpointCfg.setCheckpointingMode(mode);
@@ -487,13 +487,9 @@ public class StreamExecutionEnvironment {
 	 * the moment. If the "force" parameter is set to true, the system will execute the
 	 * job nonetheless.
 	 *
-	 * @param interval
-	 *            Time interval between state checkpoints in millis.
-	 * @param mode
-	 *            The checkpointing mode, selecting between "exactly once" and "at least once" guaranteed.
-	 * @param force
-	 *            If true checkpointing will be enabled for iterative jobs as well.
-	 *
+	 * @param interval Time interval between state checkpoints in millis.
+	 * @param mode     The checkpointing mode, selecting between "exactly once" and "at least once" guaranteed.
+	 * @param force    If true checkpointing will be enabled for iterative jobs as well.
 	 * @deprecated Use {@link #enableCheckpointing(long, CheckpointingMode)} instead.
 	 * Forcing checkpoints will be removed in the future.
 	 */
@@ -586,7 +582,6 @@ public class StreamExecutionEnvironment {
 	 * consistent (assuming that Flink is run in high-availability mode).
 	 *
 	 * @return This StreamExecutionEnvironment itself, to allow chaining of function calls.
-	 *
 	 * @see #getStateBackend()
 	 */
 	@PublicEvolving
@@ -643,9 +638,7 @@ public class StreamExecutionEnvironment {
 	 * indicates that the system default value (as defined in the configuration)
 	 * should be used.
 	 *
-	 * @param numberOfExecutionRetries
-	 * 		The number of times the system will try to re-execute failed tasks.
-	 *
+	 * @param numberOfExecutionRetries The number of times the system will try to re-execute failed tasks.
 	 * @deprecated This method will be replaced by {@link #setRestartStrategy}. The
 	 * {@link RestartStrategies#fixedDelayRestart(int, Time)} contains the number of
 	 * execution retries.
@@ -662,7 +655,6 @@ public class StreamExecutionEnvironment {
 	 * in the configuration) should be used.
 	 *
 	 * @return The number of times the system will try to re-execute failed tasks.
-	 *
 	 * @deprecated This method will be replaced by {@link #getRestartStrategy}.
 	 */
 	@Deprecated
@@ -683,22 +675,18 @@ public class StreamExecutionEnvironment {
 	 * java.io.Serializable), because it may be distributed to the worker nodes
 	 * by java serialization.
 	 *
-	 * @param type
-	 * 		The class of the types serialized with the given serializer.
-	 * @param serializer
-	 * 		The serializer to use.
+	 * @param type       The class of the types serialized with the given serializer.
+	 * @param serializer The serializer to use.
 	 */
-	public <T extends Serializer<?> & Serializable>void addDefaultKryoSerializer(Class<?> type, T serializer) {
+	public <T extends Serializer<?> & Serializable> void addDefaultKryoSerializer(Class<?> type, T serializer) {
 		config.addDefaultKryoSerializer(type, serializer);
 	}
 
 	/**
 	 * Adds a new Kryo default serializer to the Runtime.
 	 *
-	 * @param type
-	 * 		The class of the types serialized with the given serializer.
-	 * @param serializerClass
-	 * 		The class of the serializer to use.
+	 * @param type            The class of the types serialized with the given serializer.
+	 * @param serializerClass The class of the serializer to use.
 	 */
 	public void addDefaultKryoSerializer(Class<?> type, Class<? extends Serializer<?>> serializerClass) {
 		config.addDefaultKryoSerializer(type, serializerClass);
@@ -711,12 +699,10 @@ public class StreamExecutionEnvironment {
 	 * java.io.Serializable), because it may be distributed to the worker nodes
 	 * by java serialization.
 	 *
-	 * @param type
-	 * 		The class of the types serialized with the given serializer.
-	 * @param serializer
-	 * 		The serializer to use.
+	 * @param type       The class of the types serialized with the given serializer.
+	 * @param serializer The serializer to use.
 	 */
-	public <T extends Serializer<?> & Serializable>void registerTypeWithKryoSerializer(Class<?> type, T serializer) {
+	public <T extends Serializer<?> & Serializable> void registerTypeWithKryoSerializer(Class<?> type, T serializer) {
 		config.registerTypeWithKryoSerializer(type, serializer);
 	}
 
@@ -724,10 +710,8 @@ public class StreamExecutionEnvironment {
 	 * Registers the given Serializer via its class as a serializer for the
 	 * given type at the KryoSerializer.
 	 *
-	 * @param type
-	 * 		The class of the types serialized with the given serializer.
-	 * @param serializerClass
-	 * 		The class of the serializer to use.
+	 * @param type            The class of the types serialized with the given serializer.
+	 * @param serializerClass The class of the serializer to use.
 	 */
 	@SuppressWarnings("rawtypes")
 	public void registerTypeWithKryoSerializer(Class<?> type, Class<? extends Serializer> serializerClass) {
@@ -740,8 +724,7 @@ public class StreamExecutionEnvironment {
 	 * POJO serializer. If the type ends up being serialized with Kryo, then it
 	 * will be registered at Kryo to make sure that only tags are written.
 	 *
-	 * @param type
-	 * 		The class of the type to register.
+	 * @param type The class of the type to register.
 	 */
 	public void registerType(Class<?> type) {
 		if (type == null) {
@@ -786,9 +769,8 @@ public class StreamExecutionEnvironment {
 	/**
 	 * Gets the time characteristic.
 	 *
-	 * @see #setStreamTimeCharacteristic(org.apache.flink.streaming.api.TimeCharacteristic)
-	 *
 	 * @return The time characteristic.
+	 * @see #setStreamTimeCharacteristic(org.apache.flink.streaming.api.TimeCharacteristic)
 	 */
 	@PublicEvolving
 	public TimeCharacteristic getStreamTimeCharacteristic() {
@@ -805,7 +787,7 @@ public class StreamExecutionEnvironment {
 	 * untouched.
 	 *
 	 * @param configuration a configuration to read the values from
-	 * @param classLoader a class loader to use when loading classes
+	 * @param classLoader   a class loader to use when loading classes
 	 */
 	@PublicEvolving
 	public void configure(ReadableConfig configuration, ClassLoader classLoader) {
@@ -830,6 +812,7 @@ public class StreamExecutionEnvironment {
 
 	/**
 	 * 注册自定义监听器
+	 *
 	 * @param classLoader
 	 * @param listeners
 	 */
@@ -837,7 +820,7 @@ public class StreamExecutionEnvironment {
 		for (String listener : listeners) {
 			try {
 				final JobListener jobListener = InstantiationUtil.instantiate(
-						listener, JobListener.class, classLoader);
+					listener, JobListener.class, classLoader);
 				jobListeners.add(jobListener);
 			} catch (FlinkException e) {
 				throw new WrappingRuntimeException("Could not load JobListener : " + listener, e);
@@ -862,22 +845,23 @@ public class StreamExecutionEnvironment {
 	// --------------------------------------------------------------------------------------------
 
 	// todo 数据流操作
+
 	/**
+	 * 生成from到to的闭区间序列
 	 * Creates a new data stream that contains a sequence of numbers. This is a parallel source,
 	 * if you manually set the parallelism to {@code 1}
 	 * (using {@link org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator#setParallelism(int)})
 	 * the generated sequence of elements is in order.
 	 *
-	 * @param from
-	 * 		The number to start at (inclusive)
-	 * @param to
-	 * 		The number to stop at (inclusive)
+	 * @param from The number to start at (inclusive)
+	 * @param to   The number to stop at (inclusive)
 	 * @return A data stream, containing all number in the [from, to] interval
 	 */
 	public DataStreamSource<Long> generateSequence(long from, long to) {
 		if (from > to) {
 			throw new IllegalArgumentException("Start of sequence must not be greater than the end");
 		}
+		// 添加source，创建并行的支持checkpoint的StatefulSequenceSource
 		return addSource(new StatefulSequenceSource(from, to), "Sequence Source");
 	}
 
@@ -892,10 +876,8 @@ public class StreamExecutionEnvironment {
 	 * <p>Note that this operation will result in a non-parallel data stream source, i.e. a data
 	 * stream source with a degree of parallelism one.
 	 *
-	 * @param data
-	 * 		The array of elements to create the data stream from.
-	 * @param <OUT>
-	 * 		The type of the returned data stream
+	 * @param data  The array of elements to create the data stream from.
+	 * @param <OUT> The type of the returned data stream
 	 * @return The data stream representing the given array of elements
 	 */
 	@SafeVarargs
@@ -907,11 +889,10 @@ public class StreamExecutionEnvironment {
 		TypeInformation<OUT> typeInfo;
 		try {
 			typeInfo = TypeExtractor.getForObject(data[0]);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			throw new RuntimeException("Could not create TypeInformation for type " + data[0].getClass().getName()
-					+ "; please specify the TypeInformation manually via "
-					+ "StreamExecutionEnvironment#fromElements(Collection, TypeInformation)", e);
+				+ "; please specify the TypeInformation manually via "
+				+ "StreamExecutionEnvironment#fromElements(Collection, TypeInformation)", e);
 		}
 		return fromCollection(Arrays.asList(data), typeInfo);
 	}
@@ -923,12 +904,9 @@ public class StreamExecutionEnvironment {
 	 * Note that this operation will result in a non-parallel data stream source, i.e. a data stream source with a
 	 * degree of parallelism one.
 	 *
-	 * @param type
-	 * 		The based class type in the collection.
-	 * @param data
-	 * 		The array of elements to create the data stream from.
-	 * @param <OUT>
-	 * 		The type of the returned data stream
+	 * @param type  The based class type in the collection.
+	 * @param data  The array of elements to create the data stream from.
+	 * @param <OUT> The type of the returned data stream
 	 * @return The data stream representing the given array of elements
 	 */
 	@SafeVarargs
@@ -940,11 +918,10 @@ public class StreamExecutionEnvironment {
 		TypeInformation<OUT> typeInfo;
 		try {
 			typeInfo = TypeExtractor.getForClass(type);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			throw new RuntimeException("Could not create TypeInformation for type " + type.getName()
-					+ "; please specify the TypeInformation manually via "
-					+ "StreamExecutionEnvironment#fromElements(Collection, TypeInformation)", e);
+				+ "; please specify the TypeInformation manually via "
+				+ "StreamExecutionEnvironment#fromElements(Collection, TypeInformation)", e);
 		}
 		return fromCollection(Arrays.asList(data), typeInfo);
 	}
@@ -960,12 +937,9 @@ public class StreamExecutionEnvironment {
 	 * <p>Note that this operation will result in a non-parallel data stream source, i.e. a data stream source with
 	 * parallelism one.
 	 *
-	 * @param data
-	 * 		The collection of elements to create the data stream from.
-	 * @param <OUT>
-	 *     The generic type of the returned data stream.
-	 * @return
-	 *     The data stream representing the given collection
+	 * @param data  The collection of elements to create the data stream from.
+	 * @param <OUT> The generic type of the returned data stream.
+	 * @return The data stream representing the given collection
 	 */
 	public <OUT> DataStreamSource<OUT> fromCollection(Collection<OUT> data) {
 		Preconditions.checkNotNull(data, "Collection must not be null");
@@ -981,11 +955,10 @@ public class StreamExecutionEnvironment {
 		TypeInformation<OUT> typeInfo;
 		try {
 			typeInfo = TypeExtractor.getForObject(first);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			throw new RuntimeException("Could not create TypeInformation for type " + first.getClass()
-					+ "; please specify the TypeInformation manually via "
-					+ "StreamExecutionEnvironment#fromElements(Collection, TypeInformation)", e);
+				+ "; please specify the TypeInformation manually via "
+				+ "StreamExecutionEnvironment#fromElements(Collection, TypeInformation)", e);
 		}
 		return fromCollection(data, typeInfo);
 	}
@@ -996,12 +969,9 @@ public class StreamExecutionEnvironment {
 	 * <p>Note that this operation will result in a non-parallel data stream source,
 	 * i.e., a data stream source with parallelism one.
 	 *
-	 * @param data
-	 * 		The collection of elements to create the data stream from
-	 * @param typeInfo
-	 * 		The TypeInformation for the produced data stream
-	 * @param <OUT>
-	 * 		The type of the returned data stream
+	 * @param data     The collection of elements to create the data stream from
+	 * @param typeInfo The TypeInformation for the produced data stream
+	 * @param <OUT>    The type of the returned data stream
 	 * @return The data stream representing the given collection
 	 */
 	public <OUT> DataStreamSource<OUT> fromCollection(Collection<OUT> data, TypeInformation<OUT> typeInfo) {
@@ -1012,11 +982,12 @@ public class StreamExecutionEnvironment {
 
 		SourceFunction<OUT> function;
 		try {
+			// 创建FromElementsFunction udf source function
 			function = new FromElementsFunction<>(typeInfo.createSerializer(getConfig()), data);
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			throw new RuntimeException(e.getMessage(), e);
 		}
+		// 并行度设置为1
 		return addSource(function, "Collection Source", typeInfo).setParallelism(1);
 	}
 
@@ -1030,12 +1001,9 @@ public class StreamExecutionEnvironment {
 	 * <p>Note that this operation will result in a non-parallel data stream source, i.e.,
 	 * a data stream source with a parallelism of one.
 	 *
-	 * @param data
-	 * 		The iterator of elements to create the data stream from
-	 * @param type
-	 * 		The class of the data produced by the iterator. Must not be a generic class.
-	 * @param <OUT>
-	 * 		The type of the returned data stream
+	 * @param data  The iterator of elements to create the data stream from
+	 * @param type  The class of the data produced by the iterator. Must not be a generic class.
+	 * @param <OUT> The type of the returned data stream
 	 * @return The data stream representing the elements in the iterator
 	 * @see #fromCollection(java.util.Iterator, org.apache.flink.api.common.typeinfo.TypeInformation)
 	 */
@@ -1055,12 +1023,9 @@ public class StreamExecutionEnvironment {
 	 * <p>Note that this operation will result in a non-parallel data stream source, i.e.,
 	 * a data stream source with parallelism one.
 	 *
-	 * @param data
-	 * 		The iterator of elements to create the data stream from
-	 * @param typeInfo
-	 * 		The TypeInformation for the produced data stream
-	 * @param <OUT>
-	 * 		The type of the returned data stream
+	 * @param data     The iterator of elements to create the data stream from
+	 * @param typeInfo The TypeInformation for the produced data stream
+	 * @param <OUT>    The type of the returned data stream
 	 * @return The data stream representing the elements in the iterator
 	 */
 	public <OUT> DataStreamSource<OUT> fromCollection(Iterator<OUT> data, TypeInformation<OUT> typeInfo) {
@@ -1079,12 +1044,9 @@ public class StreamExecutionEnvironment {
 	 * of data returned by the iterator must be given explicitly in the form of the type class
 	 * (this is due to the fact that the Java compiler erases the generic type information).
 	 *
-	 * @param iterator
-	 * 		The iterator that produces the elements of the data stream
-	 * @param type
-	 * 		The class of the data produced by the iterator. Must not be a generic class.
-	 * @param <OUT>
-	 * 		The type of the returned data stream
+	 * @param iterator The iterator that produces the elements of the data stream
+	 * @param type     The class of the data produced by the iterator. Must not be a generic class.
+	 * @param <OUT>    The type of the returned data stream
 	 * @return A data stream representing the elements in the iterator
 	 */
 	public <OUT> DataStreamSource<OUT> fromParallelCollection(SplittableIterator<OUT> iterator, Class<OUT> type) {
@@ -1103,22 +1065,20 @@ public class StreamExecutionEnvironment {
 	 * {@link #fromParallelCollection(org.apache.flink.util.SplittableIterator, Class)} does not
 	 * supply all type information.
 	 *
-	 * @param iterator
-	 * 		The iterator that produces the elements of the data stream
-	 * @param typeInfo
-	 * 		The TypeInformation for the produced data stream.
-	 * @param <OUT>
-	 * 		The type of the returned data stream
+	 * @param iterator The iterator that produces the elements of the data stream
+	 * @param typeInfo The TypeInformation for the produced data stream.
+	 * @param <OUT>    The type of the returned data stream
 	 * @return A data stream representing the elements in the iterator
 	 */
 	public <OUT> DataStreamSource<OUT> fromParallelCollection(SplittableIterator<OUT> iterator, TypeInformation<OUT>
-			typeInfo) {
+		typeInfo) {
 		return fromParallelCollection(iterator, typeInfo, "Parallel Collection Source");
 	}
 
 	// private helper for passing different names
+	// 并行不支持无状态的
 	private <OUT> DataStreamSource<OUT> fromParallelCollection(SplittableIterator<OUT> iterator, TypeInformation<OUT>
-			typeInfo, String operatorName) {
+		typeInfo, String operatorName) {
 		return addSource(new FromSplittableIteratorFunction<>(iterator), operatorName, typeInfo);
 	}
 
@@ -1133,8 +1093,7 @@ public class StreamExecutionEnvironment {
 	 * checkpoint barriers are going to be forwarded after the source exits, thus having no
 	 * checkpoints after that point.
 	 *
-	 * @param filePath
-	 * 		The path of the file, as a URI (e.g., "file:///some/local/file" or "hdfs://host:port/file/path").
+	 * @param filePath The path of the file, as a URI (e.g., "file:///some/local/file" or "hdfs://host:port/file/path").
 	 * @return The data stream that represents the data read from the given file as text lines
 	 */
 	public DataStreamSource<String> readTextFile(String filePath) {
@@ -1142,6 +1101,7 @@ public class StreamExecutionEnvironment {
 	}
 
 	/**
+	 *  从文件系统读取文件
 	 * Reads the given file line-by-line and creates a data stream that contains a string with the
 	 * contents of each such line. The {@link java.nio.charset.Charset} with the given name will be
 	 * used to read the files.
@@ -1152,16 +1112,15 @@ public class StreamExecutionEnvironment {
 	 * and exits, without waiting for the readers to finish reading. This implies that no more checkpoint
 	 * barriers are going to be forwarded after the source exits, thus having no checkpoints after that point.
 	 *
-	 * @param filePath
-	 * 		The path of the file, as a URI (e.g., "file:///some/local/file" or "hdfs://host:port/file/path")
-	 * @param charsetName
-	 * 		The name of the character set used to read the file
+	 * @param filePath    The path of the file, as a URI (e.g., "file:///some/local/file" or "hdfs://host:port/file/path")
+	 * @param charsetName The name of the character set used to read the file
 	 * @return The data stream that represents the data read from the given file as text lines
 	 */
 	public DataStreamSource<String> readTextFile(String filePath, String charsetName) {
 		Preconditions.checkArgument(!StringUtils.isNullOrWhitespaceOnly(filePath), "The file path must not be null or blank.");
 
 		TextInputFormat format = new TextInputFormat(new Path(filePath));
+		// 过滤没完成的hdfs文件_COPYING_，.和_开头的文件
 		format.setFilesFilter(FilePathFilter.createDefaultFilter());
 		TypeInformation<String> typeInfo = BasicTypeInfo.STRING_TYPE_INFO;
 		format.setCharsetName(charsetName);
@@ -1185,12 +1144,9 @@ public class StreamExecutionEnvironment {
 	 * and exits, without waiting for the readers to finish reading. This implies that no more checkpoint
 	 * barriers are going to be forwarded after the source exits, thus having no checkpoints after that point.
 	 *
-	 * @param filePath
-	 * 		The path of the file, as a URI (e.g., "file:///some/local/file" or "hdfs://host:port/file/path")
-	 * @param inputFormat
-	 * 		The input format used to create the data stream
-	 * @param <OUT>
-	 * 		The type of the returned data stream
+	 * @param filePath    The path of the file, as a URI (e.g., "file:///some/local/file" or "hdfs://host:port/file/path")
+	 * @param inputFormat The input format used to create the data stream
+	 * @param <OUT>       The type of the returned data stream
 	 * @return The data stream that represents the data read from the given file
 	 */
 	public <OUT> DataStreamSource<OUT> readFile(FileInputFormat<OUT> inputFormat,
@@ -1204,23 +1160,15 @@ public class StreamExecutionEnvironment {
 	 *
 	 * <p>See {@link #readFile(FileInputFormat, String, FileProcessingMode, long)}
 	 *
-	 * @param inputFormat
-	 * 		The input format used to create the data stream
-	 * @param filePath
-	 * 		The path of the file, as a URI (e.g., "file:///some/local/file" or "hdfs://host:port/file/path")
-	 * @param watchType
-	 * 		The mode in which the source should operate, i.e. monitor path and react to new data, or process once and exit
-	 * @param interval
-	 * 		In the case of periodic path monitoring, this specifies the interval (in millis) between consecutive path scans
-	 * @param filter
-	 * 		The files to be excluded from the processing
-	 * @param <OUT>
-	 * 		The type of the returned data stream
+	 * @param inputFormat The input format used to create the data stream
+	 * @param filePath    The path of the file, as a URI (e.g., "file:///some/local/file" or "hdfs://host:port/file/path")
+	 * @param watchType   The mode in which the source should operate, i.e. monitor path and react to new data, or process once and exit
+	 * @param interval    In the case of periodic path monitoring, this specifies the interval (in millis) between consecutive path scans
+	 * @param filter      The files to be excluded from the processing
+	 * @param <OUT>       The type of the returned data stream
 	 * @return The data stream that represents the data read from the given file
-	 *
 	 * @deprecated Use {@link FileInputFormat#setFilesFilter(FilePathFilter)} to set a filter and
-	 * 		{@link StreamExecutionEnvironment#readFile(FileInputFormat, String, FileProcessingMode, long)}
-	 *
+	 * {@link StreamExecutionEnvironment#readFile(FileInputFormat, String, FileProcessingMode, long)}
 	 */
 	@PublicEvolving
 	@Deprecated
@@ -1236,8 +1184,8 @@ public class StreamExecutionEnvironment {
 			typeInformation = TypeExtractor.getInputFormatTypes(inputFormat);
 		} catch (Exception e) {
 			throw new InvalidProgramException("The type returned by the input format could not be " +
-					"automatically determined. Please specify the TypeInformation of the produced type " +
-					"explicitly by using the 'createInput(InputFormat, TypeInformation)' method instead.");
+				"automatically determined. Please specify the TypeInformation of the produced type " +
+				"explicitly by using the 'createInput(InputFormat, TypeInformation)' method instead.");
 		}
 		return readFile(inputFormat, filePath, watchType, interval, typeInformation);
 	}
@@ -1263,16 +1211,11 @@ public class StreamExecutionEnvironment {
 	 * and exits, without waiting for the readers to finish reading. This implies that no more checkpoint barriers
 	 * are going to be forwarded after the source exits, thus having no checkpoints after that point.
 	 *
-	 * @param inputFormat
-	 * 		The input format used to create the data stream
-	 * @param filePath
-	 * 		The path of the file, as a URI (e.g., "file:///some/local/file" or "hdfs://host:port/file/path")
-	 * @param watchType
-	 * 		The mode in which the source should operate, i.e. monitor path and react to new data, or process once and exit
-	 * @param interval
-	 * 		In the case of periodic path monitoring, this specifies the interval (in millis) between consecutive path scans
-	 * @param <OUT>
-	 * 		The type of the returned data stream
+	 * @param inputFormat The input format used to create the data stream
+	 * @param filePath    The path of the file, as a URI (e.g., "file:///some/local/file" or "hdfs://host:port/file/path")
+	 * @param watchType   The mode in which the source should operate, i.e. monitor path and react to new data, or process once and exit
+	 * @param interval    In the case of periodic path monitoring, this specifies the interval (in millis) between consecutive path scans
+	 * @param <OUT>       The type of the returned data stream
 	 * @return The data stream that represents the data read from the given file
 	 */
 	@PublicEvolving
@@ -1286,8 +1229,8 @@ public class StreamExecutionEnvironment {
 			typeInformation = TypeExtractor.getInputFormatTypes(inputFormat);
 		} catch (Exception e) {
 			throw new InvalidProgramException("The type returned by the input format could not be " +
-					"automatically determined. Please specify the TypeInformation of the produced type " +
-					"explicitly by using the 'createInput(InputFormat, TypeInformation)' method instead.");
+				"automatically determined. Please specify the TypeInformation of the produced type " +
+				"explicitly by using the 'createInput(InputFormat, TypeInformation)' method instead.");
 		}
 		return readFile(inputFormat, filePath, watchType, interval, typeInformation);
 	}
@@ -1296,26 +1239,22 @@ public class StreamExecutionEnvironment {
 	 * Creates a data stream that contains the contents of file created while system watches the given path. The file
 	 * will be read with the system's default character set.
 	 *
-	 * @param filePath
-	 * 		The path of the file, as a URI (e.g., "file:///some/local/file" or "hdfs://host:port/file/path/")
-	 * @param intervalMillis
-	 * 		The interval of file watching in milliseconds
-	 * @param watchType
-	 * 		The watch type of file stream. When watchType is {@link org.apache.flink.streaming.api.functions.source.FileMonitoringFunction.WatchType#ONLY_NEW_FILES}, the system processes
-	 * 		only
-	 * 		new files. {@link org.apache.flink.streaming.api.functions.source.FileMonitoringFunction.WatchType#REPROCESS_WITH_APPENDED} means that the system re-processes all contents of
-	 * 		appended file. {@link org.apache.flink.streaming.api.functions.source.FileMonitoringFunction.WatchType#PROCESS_ONLY_APPENDED} means that the system processes only appended
-	 * 		contents
-	 * 		of files.
+	 * @param filePath       The path of the file, as a URI (e.g., "file:///some/local/file" or "hdfs://host:port/file/path/")
+	 * @param intervalMillis The interval of file watching in milliseconds
+	 * @param watchType      The watch type of file stream. When watchType is {@link org.apache.flink.streaming.api.functions.source.FileMonitoringFunction.WatchType#ONLY_NEW_FILES}, the system processes
+	 *                       only
+	 *                       new files. {@link org.apache.flink.streaming.api.functions.source.FileMonitoringFunction.WatchType#REPROCESS_WITH_APPENDED} means that the system re-processes all contents of
+	 *                       appended file. {@link org.apache.flink.streaming.api.functions.source.FileMonitoringFunction.WatchType#PROCESS_ONLY_APPENDED} means that the system processes only appended
+	 *                       contents
+	 *                       of files.
 	 * @return The DataStream containing the given directory.
-	 *
 	 * @deprecated Use {@link #readFile(FileInputFormat, String, FileProcessingMode, long)} instead.
 	 */
 	@Deprecated
 	@SuppressWarnings("deprecation")
 	public DataStream<String> readFileStream(String filePath, long intervalMillis, FileMonitoringFunction.WatchType watchType) {
 		DataStream<Tuple3<String, Long, Long>> source = addSource(new FileMonitoringFunction(
-				filePath, intervalMillis, watchType), "Read File Stream source");
+			filePath, intervalMillis, watchType), "Read File Stream source");
 
 		return source.flatMap(new FileReadFunction());
 	}
@@ -1334,18 +1273,12 @@ public class StreamExecutionEnvironment {
 	 * and exits, without waiting for the readers to finish reading. This implies that no more checkpoint barriers
 	 * are going to be forwarded after the source exits, thus having no checkpoints after that point.
 	 *
-	 * @param inputFormat
-	 * 		The input format used to create the data stream
-	 * @param filePath
-	 * 		The path of the file, as a URI (e.g., "file:///some/local/file" or "hdfs://host:port/file/path")
-	 * @param watchType
-	 * 		The mode in which the source should operate, i.e. monitor path and react to new data, or process once and exit
-	 * @param typeInformation
-	 * 		Information on the type of the elements in the output stream
-	 * @param interval
-	 * 		In the case of periodic path monitoring, this specifies the interval (in millis) between consecutive path scans
-	 * @param <OUT>
-	 * 		The type of the returned data stream
+	 * @param inputFormat     The input format used to create the data stream
+	 * @param filePath        The path of the file, as a URI (e.g., "file:///some/local/file" or "hdfs://host:port/file/path")
+	 * @param watchType       The mode in which the source should operate, i.e. monitor path and react to new data, or process once and exit
+	 * @param typeInformation Information on the type of the elements in the output stream
+	 * @param interval        In the case of periodic path monitoring, this specifies the interval (in millis) between consecutive path scans
+	 * @param <OUT>           The type of the returned data stream
 	 * @return The data stream that represents the data read from the given file
 	 */
 	@PublicEvolving
@@ -1370,20 +1303,15 @@ public class StreamExecutionEnvironment {
 	 * <p>Let us note that the socket itself does not report on abort and as a consequence retries are only initiated when
 	 * the socket was gracefully terminated.
 	 *
-	 * @param hostname
-	 * 		The host name which a server socket binds
-	 * @param port
-	 * 		The port number which a server socket binds. A port number of 0 means that the port number is automatically
-	 * 		allocated.
-	 * @param delimiter
-	 * 		A character which splits received strings into records
-	 * @param maxRetry
-	 * 		The maximal retry interval in seconds while the program waits for a socket that is temporarily down.
-	 * 		Reconnection is initiated every second. A number of 0 means that the reader is immediately terminated,
-	 * 		while
-	 * 		a	negative value ensures retrying forever.
+	 * @param hostname  The host name which a server socket binds
+	 * @param port      The port number which a server socket binds. A port number of 0 means that the port number is automatically
+	 *                  allocated.
+	 * @param delimiter A character which splits received strings into records
+	 * @param maxRetry  The maximal retry interval in seconds while the program waits for a socket that is temporarily down.
+	 *                  Reconnection is initiated every second. A number of 0 means that the reader is immediately terminated,
+	 *                  while
+	 *                  a	negative value ensures retrying forever.
 	 * @return A data stream containing the strings received from the socket
-	 *
 	 * @deprecated Use {@link #socketTextStream(String, int, String, long)} instead.
 	 */
 	@Deprecated
@@ -1399,39 +1327,31 @@ public class StreamExecutionEnvironment {
 	 * <p>Let us note that the socket itself does not report on abort and as a consequence retries are only initiated when
 	 * the socket was gracefully terminated.
 	 *
-	 * @param hostname
-	 * 		The host name which a server socket binds
-	 * @param port
-	 * 		The port number which a server socket binds. A port number of 0 means that the port number is automatically
-	 * 		allocated.
-	 * @param delimiter
-	 * 		A string which splits received strings into records
-	 * @param maxRetry
-	 * 		The maximal retry interval in seconds while the program waits for a socket that is temporarily down.
-	 * 		Reconnection is initiated every second. A number of 0 means that the reader is immediately terminated,
-	 * 		while
-	 * 		a	negative value ensures retrying forever.
+	 * @param hostname  The host name which a server socket binds
+	 * @param port      The port number which a server socket binds. A port number of 0 means that the port number is automatically
+	 *                  allocated.
+	 * @param delimiter A string which splits received strings into records
+	 * @param maxRetry  The maximal retry interval in seconds while the program waits for a socket that is temporarily down.
+	 *                  Reconnection is initiated every second. A number of 0 means that the reader is immediately terminated,
+	 *                  while
+	 *                  a	negative value ensures retrying forever.
 	 * @return A data stream containing the strings received from the socket
 	 */
 	@PublicEvolving
 	public DataStreamSource<String> socketTextStream(String hostname, int port, String delimiter, long maxRetry) {
 		return addSource(new SocketTextStreamFunction(hostname, port, delimiter, maxRetry),
-				"Socket Stream");
+			"Socket Stream");
 	}
 
 	/**
 	 * Creates a new data stream that contains the strings received infinitely from a socket. Received strings are
 	 * decoded by the system's default character set. The reader is terminated immediately when the socket is down.
 	 *
-	 * @param hostname
-	 * 		The host name which a server socket binds
-	 * @param port
-	 * 		The port number which a server socket binds. A port number of 0 means that the port number is automatically
-	 * 		allocated.
-	 * @param delimiter
-	 * 		A character which splits received strings into records
+	 * @param hostname  The host name which a server socket binds
+	 * @param port      The port number which a server socket binds. A port number of 0 means that the port number is automatically
+	 *                  allocated.
+	 * @param delimiter A character which splits received strings into records
 	 * @return A data stream containing the strings received from the socket
-	 *
 	 * @deprecated Use {@link #socketTextStream(String, int, String)} instead.
 	 */
 	@Deprecated
@@ -1444,13 +1364,10 @@ public class StreamExecutionEnvironment {
 	 * Creates a new data stream that contains the strings received infinitely from a socket. Received strings are
 	 * decoded by the system's default character set. The reader is terminated immediately when the socket is down.
 	 *
-	 * @param hostname
-	 * 		The host name which a server socket binds
-	 * @param port
-	 * 		The port number which a server socket binds. A port number of 0 means that the port number is automatically
-	 * 		allocated.
-	 * @param delimiter
-	 * 		A string which splits received strings into records
+	 * @param hostname  The host name which a server socket binds
+	 * @param port      The port number which a server socket binds. A port number of 0 means that the port number is automatically
+	 *                  allocated.
+	 * @param delimiter A string which splits received strings into records
 	 * @return A data stream containing the strings received from the socket
 	 */
 	@PublicEvolving
@@ -1463,11 +1380,9 @@ public class StreamExecutionEnvironment {
 	 * decoded by the system's default character set, using"\n" as delimiter. The reader is terminated immediately when
 	 * the socket is down.
 	 *
-	 * @param hostname
-	 * 		The host name which a server socket binds
-	 * @param port
-	 * 		The port number which a server socket binds. A port number of 0 means that the port number is automatically
-	 * 		allocated.
+	 * @param hostname The host name which a server socket binds
+	 * @param port     The port number which a server socket binds. A port number of 0 means that the port number is automatically
+	 *                 allocated.
 	 * @return A data stream containing the strings received from the socket
 	 */
 	@PublicEvolving
@@ -1492,10 +1407,8 @@ public class StreamExecutionEnvironment {
 	 * without waiting for the readers to finish reading. This implies that no more checkpoint
 	 * barriers are going to be forwarded after the source exits, thus having no checkpoints.
 	 *
-	 * @param inputFormat
-	 * 		The input format used to create the data stream
-	 * @param <OUT>
-	 * 		The type of the returned data stream
+	 * @param inputFormat The input format used to create the data stream
+	 * @param <OUT>       The type of the returned data stream
 	 * @return The data stream that represents the data created by the input format
 	 */
 	@PublicEvolving
@@ -1517,12 +1430,9 @@ public class StreamExecutionEnvironment {
 	 * without waiting for the readers to finish reading. This implies that no more checkpoint
 	 * barriers are going to be forwarded after the source exits, thus having no checkpoints.
 	 *
-	 * @param inputFormat
-	 * 		The input format used to create the data stream
-	 * @param typeInfo
-	 * 		The information about the type of the output type
-	 * @param <OUT>
-	 * 		The type of the returned data stream
+	 * @param inputFormat The input format used to create the data stream
+	 * @param typeInfo    The information about the type of the output type
+	 * @param <OUT>       The type of the returned data stream
 	 * @return The data stream that represents the data created by the input format
 	 */
 	@PublicEvolving
@@ -1534,7 +1444,7 @@ public class StreamExecutionEnvironment {
 			FileInputFormat<OUT> format = (FileInputFormat<OUT>) inputFormat;
 
 			source = createFileInput(format, typeInfo, "Custom File source",
-					FileProcessingMode.PROCESS_ONCE, -1);
+				FileProcessingMode.PROCESS_ONCE, -1);
 		} else {
 			source = createInput(inputFormat, typeInfo, "Custom Source");
 		}
@@ -1563,16 +1473,17 @@ public class StreamExecutionEnvironment {
 		Preconditions.checkArgument(monitoringMode.equals(FileProcessingMode.PROCESS_ONCE) ||
 				interval >= ContinuousFileMonitoringFunction.MIN_MONITORING_INTERVAL,
 			"The path monitoring interval cannot be less than " +
-					ContinuousFileMonitoringFunction.MIN_MONITORING_INTERVAL + " ms.");
+				ContinuousFileMonitoringFunction.MIN_MONITORING_INTERVAL + " ms.");
 
+		//连续文件监听函数，基于文件修改时间监听，
 		ContinuousFileMonitoringFunction<OUT> monitoringFunction =
 			new ContinuousFileMonitoringFunction<>(inputFormat, monitoringMode, getParallelism(), interval);
 
 		ContinuousFileReaderOperatorFactory<OUT, TimestampedFileInputSplit> factory =
-				new ContinuousFileReaderOperatorFactory<>(inputFormat);
+			new ContinuousFileReaderOperatorFactory<>(inputFormat);
 
 		SingleOutputStreamOperator<OUT> source = addSource(monitoringFunction, sourceName)
-				.transform("Split Reader: " + sourceName, typeInfo, factory);
+			.transform("Split Reader: " + sourceName, typeInfo, factory);
 
 		return new DataStreamSource<>(source);
 	}
@@ -1586,10 +1497,8 @@ public class StreamExecutionEnvironment {
 	 * will have the parallelism of the environment. To change this afterwards call {@link
 	 * org.apache.flink.streaming.api.datastream.DataStreamSource#setParallelism(int)}
 	 *
-	 * @param function
-	 * 		the user defined function
-	 * @param <OUT>
-	 * 		type of the returned stream
+	 * @param function the user defined function
+	 * @param <OUT>    type of the returned stream
 	 * @return the data stream constructed
 	 */
 	public <OUT> DataStreamSource<OUT> addSource(SourceFunction<OUT> function) {
@@ -1602,12 +1511,9 @@ public class StreamExecutionEnvironment {
 	 * support type information. Otherwise use
 	 * {@link #addSource(org.apache.flink.streaming.api.functions.source.SourceFunction)}
 	 *
-	 * @param function
-	 * 		the user defined function
-	 * @param sourceName
-	 * 		Name of the data source
-	 * @param <OUT>
-	 * 		type of the returned stream
+	 * @param function   the user defined function
+	 * @param sourceName Name of the data source
+	 * @param <OUT>      type of the returned stream
 	 * @return the data stream constructed
 	 */
 	public <OUT> DataStreamSource<OUT> addSource(SourceFunction<OUT> function, String sourceName) {
@@ -1620,12 +1526,9 @@ public class StreamExecutionEnvironment {
 	 * support type information. Otherwise use
 	 * {@link #addSource(org.apache.flink.streaming.api.functions.source.SourceFunction)}
 	 *
-	 * @param function
-	 * 		the user defined function
-	 * @param <OUT>
-	 * 		type of the returned stream
-	 * @param typeInfo
-	 * 		the user defined type information for the stream
+	 * @param function the user defined function
+	 * @param <OUT>    type of the returned stream
+	 * @param typeInfo the user defined type information for the stream
 	 * @return the data stream constructed
 	 */
 	public <OUT> DataStreamSource<OUT> addSource(SourceFunction<OUT> function, TypeInformation<OUT> typeInfo) {
@@ -1638,75 +1541,66 @@ public class StreamExecutionEnvironment {
 	 * support type information. Otherwise use
 	 * {@link #addSource(org.apache.flink.streaming.api.functions.source.SourceFunction)}
 	 *
-	 * @param function
-	 * 		the user defined function
-	 * @param sourceName
-	 * 		Name of the data source
-	 * @param <OUT>
-	 * 		type of the returned stream
-	 * @param typeInfo
-	 * 		the user defined type information for the stream
+	 * @param function   the user defined function
+	 * @param sourceName Name of the data source
+	 * @param <OUT>      type of the returned stream
+	 * @param typeInfo   the user defined type information for the stream
 	 * @return the data stream constructed
 	 */
 	public <OUT> DataStreamSource<OUT> addSource(SourceFunction<OUT> function, String sourceName, TypeInformation<OUT> typeInfo) {
 
 		TypeInformation<OUT> resolvedTypeInfo = getTypeInfo(function, sourceName, SourceFunction.class, typeInfo);
-
+		// 判断是否并行source
 		boolean isParallel = function instanceof ParallelSourceFunction;
-
+	// 清理function主要包含// 设置私有变量可以反射获取，function序列化
 		clean(function);
 
+		// 包装为StreamSource
 		final StreamSource<OUT, ?> sourceOperator = new StreamSource<>(function);
+		// 将StreamSource封装为DataStreamSource
 		return new DataStreamSource<>(this, resolvedTypeInfo, sourceOperator, isParallel, sourceName);
 	}
 
 	/**
 	 * Add a data {@link Source} to the environment to get a {@link DataStream}.
 	 *
-	 * @param source
-	 * 		the user defined source
-	 * @param sourceName
-	 * 		Name of the data source
-	 * @param <OUT>
-	 * 		type of the returned stream
+	 * @param source     the user defined source
+	 * @param sourceName Name of the data source
+	 * @param <OUT>      type of the returned stream
 	 * @return the data stream constructed
 	 */
 	@Experimental
 	public <OUT> DataStreamSource<OUT> fromSource(
-			Source<OUT, ?, ?> source,
-			WatermarkStrategy<OUT> timestampsAndWatermarks,
-			String sourceName) {
+		Source<OUT, ?, ?> source,
+		WatermarkStrategy<OUT> timestampsAndWatermarks,
+		String sourceName) {
 		return fromSource(source, timestampsAndWatermarks, sourceName, null);
 	}
 
 	/**
 	 * Add a data {@link Source} to the environment to get a {@link DataStream}.
 	 *
-	 * @param source
-	 * 		the user defined source
-	 * @param sourceName
-	 * 		Name of the data source
-	 * @param <OUT>
-	 * 		type of the returned stream
-	 * @param typeInfo
-	 * 		the user defined type information for the stream
+	 * @param source     the user defined source
+	 * @param sourceName Name of the data source
+	 * @param <OUT>      type of the returned stream
+	 * @param typeInfo   the user defined type information for the stream
 	 * @return the data stream constructed
 	 */
 	@Experimental
 	public <OUT> DataStreamSource<OUT> fromSource(
-			Source<OUT, ?, ?> source,
-			WatermarkStrategy<OUT> timestampsAndWatermarks,
-			String sourceName,
-			TypeInformation<OUT> typeInfo) {
+		Source<OUT, ?, ?> source,
+		WatermarkStrategy<OUT> timestampsAndWatermarks,
+		String sourceName,
+		TypeInformation<OUT> typeInfo) {
 
 		final TypeInformation<OUT> resolvedTypeInfo = getTypeInfo(source, sourceName, Source.class, typeInfo);
 
 		return new DataStreamSource<>(
-				this,
-				checkNotNull(source, "source"),
-				checkNotNull(timestampsAndWatermarks, "timestampsAndWatermarks"),
-				checkNotNull(resolvedTypeInfo),
-				checkNotNull(sourceName));
+			this,
+			checkNotNull(source, "source"),
+			checkNotNull(timestampsAndWatermarks, "timestampsAndWatermarks"),
+			checkNotNull(resolvedTypeInfo),
+			checkNotNull(sourceName));
 	}
 
 	/**
@@ -1731,8 +1625,7 @@ public class StreamExecutionEnvironment {
 	 *
 	 * <p>The program execution will be logged and displayed with the provided name
 	 *
-	 * @param jobName
-	 * 		Desired name of the job
+	 * @param jobName Desired name of the job
 	 * @return The result of the job execution, containing elapsed time and accumulators.
 	 * @throws Exception which occurs during job execution.
 	 */
@@ -1753,6 +1646,7 @@ public class StreamExecutionEnvironment {
 	 */
 	@Internal
 	public JobExecutionResult execute(StreamGraph streamGraph) throws Exception {
+		// 异步执行StreamGraph
 		final JobClient jobClient = executeAsync(streamGraph);
 
 		try {
@@ -1892,12 +1786,13 @@ public class StreamExecutionEnvironment {
 	}
 
 	/**
+	 * 流作业的StreamGraph的Getter，可以清除以前注册的transformations 。 例如，清除转换允许多次调用execute()时不重新执行相同的操作。
 	 * Getter of the {@link org.apache.flink.streaming.api.graph.StreamGraph StreamGraph} of the streaming job
 	 * with the option to clear previously registered {@link Transformation transformations}. Clearing the
 	 * transformations allows, for example, to not re-execute the same operations when calling
 	 * {@link #execute()} multiple times.
 	 *
-	 * @param jobName Desired name of the job
+	 * @param jobName              Desired name of the job
 	 * @param clearTransformations Whether or not to clear previously registered transformations
 	 * @return The streamgraph representing the transformations
 	 */
@@ -1914,6 +1809,7 @@ public class StreamExecutionEnvironment {
 		if (transformations.size() <= 0) {
 			throw new IllegalStateException("No operators defined in streaming topology. Cannot execute.");
 		}
+		// 创建StreamGraph生成器
 		return new StreamGraphGenerator(transformations, config, checkpointCfg)
 			.setStateBackend(defaultStateBackend)
 			.setChaining(isChainingEnabled)
@@ -1935,6 +1831,7 @@ public class StreamExecutionEnvironment {
 	}
 
 	/**
+	 * 返回一个封闭清理后的给定function，如果isClosureCleanerEnabled配置开启
 	 * Returns a "closure-cleaned" version of the given function. Cleans only if closure cleaning
 	 * is not disabled in the {@link org.apache.flink.api.common.ExecutionConfig}
 	 */
@@ -2001,8 +1898,7 @@ public class StreamExecutionEnvironment {
 	 * environment was created in. It will use the parallelism specified in the
 	 * parameter.
 	 *
-	 * @param parallelism
-	 * 		The parallelism for the local environment.
+	 * @param parallelism The parallelism for the local environment.
 	 * @return A local execution environment with the specified parallelism.
 	 */
 	public static LocalStreamEnvironment createLocalEnvironment(int parallelism) {
@@ -2015,10 +1911,8 @@ public class StreamExecutionEnvironment {
 	 * environment was created in. It will use the parallelism specified in the
 	 * parameter.
 	 *
-	 * @param parallelism
-	 * 		The parallelism for the local environment.
-	 * 	@param configuration
-	 * 		Pass a custom configuration into the cluster
+	 * @param parallelism   The parallelism for the local environment.
+	 * @param configuration Pass a custom configuration into the cluster
 	 * @return A local execution environment with the specified parallelism.
 	 */
 	public static LocalStreamEnvironment createLocalEnvironment(int parallelism, Configuration configuration) {
@@ -2060,21 +1954,18 @@ public class StreamExecutionEnvironment {
 	 * execution will use no parallelism, unless the parallelism is set
 	 * explicitly via {@link #setParallelism}.
 	 *
-	 * @param host
-	 * 		The host name or address of the master (JobManager), where the
-	 * 		program should be executed.
-	 * @param port
-	 * 		The port of the master (JobManager), where the program should
-	 * 		be executed.
-	 * @param jarFiles
-	 * 		The JAR files with code that needs to be shipped to the
-	 * 		cluster. If the program uses user-defined functions,
-	 * 		user-defined input formats, or any libraries, those must be
-	 * 		provided in the JAR files.
+	 * @param host     The host name or address of the master (JobManager), where the
+	 *                 program should be executed.
+	 * @param port     The port of the master (JobManager), where the program should
+	 *                 be executed.
+	 * @param jarFiles The JAR files with code that needs to be shipped to the
+	 *                 cluster. If the program uses user-defined functions,
+	 *                 user-defined input formats, or any libraries, those must be
+	 *                 provided in the JAR files.
 	 * @return A remote environment that executes the program on a cluster.
 	 */
 	public static StreamExecutionEnvironment createRemoteEnvironment(
-			String host, int port, String... jarFiles) {
+		String host, int port, String... jarFiles) {
 		return new RemoteStreamEnvironment(host, port, jarFiles);
 	}
 
@@ -2084,23 +1975,19 @@ public class StreamExecutionEnvironment {
 	 * paths used in the program must be accessible from the cluster. The
 	 * execution will use the specified parallelism.
 	 *
-	 * @param host
-	 * 		The host name or address of the master (JobManager), where the
-	 * 		program should be executed.
-	 * @param port
-	 * 		The port of the master (JobManager), where the program should
-	 * 		be executed.
-	 * @param parallelism
-	 * 		The parallelism to use during the execution.
-	 * @param jarFiles
-	 * 		The JAR files with code that needs to be shipped to the
-	 * 		cluster. If the program uses user-defined functions,
-	 * 		user-defined input formats, or any libraries, those must be
-	 * 		provided in the JAR files.
+	 * @param host        The host name or address of the master (JobManager), where the
+	 *                    program should be executed.
+	 * @param port        The port of the master (JobManager), where the program should
+	 *                    be executed.
+	 * @param parallelism The parallelism to use during the execution.
+	 * @param jarFiles    The JAR files with code that needs to be shipped to the
+	 *                    cluster. If the program uses user-defined functions,
+	 *                    user-defined input formats, or any libraries, those must be
+	 *                    provided in the JAR files.
 	 * @return A remote environment that executes the program on a cluster.
 	 */
 	public static StreamExecutionEnvironment createRemoteEnvironment(
-			String host, int port, int parallelism, String... jarFiles) {
+		String host, int port, int parallelism, String... jarFiles) {
 		RemoteStreamEnvironment env = new RemoteStreamEnvironment(host, port, jarFiles);
 		env.setParallelism(parallelism);
 		return env;
@@ -2112,23 +1999,19 @@ public class StreamExecutionEnvironment {
 	 * paths used in the program must be accessible from the cluster. The
 	 * execution will use the specified parallelism.
 	 *
-	 * @param host
-	 * 		The host name or address of the master (JobManager), where the
-	 * 		program should be executed.
-	 * @param port
-	 * 		The port of the master (JobManager), where the program should
-	 * 		be executed.
-	 * @param clientConfig
-	 * 		The configuration used by the client that connects to the remote cluster.
-	 * @param jarFiles
-	 * 		The JAR files with code that needs to be shipped to the
-	 * 		cluster. If the program uses user-defined functions,
-	 * 		user-defined input formats, or any libraries, those must be
-	 * 		provided in the JAR files.
+	 * @param host         The host name or address of the master (JobManager), where the
+	 *                     program should be executed.
+	 * @param port         The port of the master (JobManager), where the program should
+	 *                     be executed.
+	 * @param clientConfig The configuration used by the client that connects to the remote cluster.
+	 * @param jarFiles     The JAR files with code that needs to be shipped to the
+	 *                     cluster. If the program uses user-defined functions,
+	 *                     user-defined input formats, or any libraries, those must be
+	 *                     provided in the JAR files.
 	 * @return A remote environment that executes the program on a cluster.
 	 */
 	public static StreamExecutionEnvironment createRemoteEnvironment(
-			String host, int port, Configuration clientConfig, String... jarFiles) {
+		String host, int port, Configuration clientConfig, String... jarFiles) {
 		return new RemoteStreamEnvironment(host, port, clientConfig, jarFiles);
 	}
 
@@ -2180,7 +2063,7 @@ public class StreamExecutionEnvironment {
 	 * {@link org.apache.flink.api.common.functions.RuntimeContext#getDistributedCache()}.
 	 *
 	 * @param filePath The path of the file, as a URI (e.g. "file:///some/path" or "hdfs://host:port/and/path")
-	 * @param name The name under which the file is registered.
+	 * @param name     The name under which the file is registered.
 	 */
 	public void registerCachedFile(String filePath, String name) {
 		registerCachedFile(filePath, name, false);
@@ -2197,8 +2080,8 @@ public class StreamExecutionEnvironment {
 	 * {@link org.apache.flink.api.common.cache.DistributedCache} via
 	 * {@link org.apache.flink.api.common.functions.RuntimeContext#getDistributedCache()}.
 	 *
-	 * @param filePath The path of the file, as a URI (e.g. "file:///some/path" or "hdfs://host:port/and/path")
-	 * @param name The name under which the file is registered.
+	 * @param filePath   The path of the file, as a URI (e.g. "file:///some/path" or "hdfs://host:port/and/path")
+	 * @param name       The name under which the file is registered.
 	 * @param executable flag indicating whether the file should be executable
 	 */
 	public void registerCachedFile(String filePath, String name, boolean executable) {
@@ -2208,10 +2091,10 @@ public class StreamExecutionEnvironment {
 	// Private helpers.
 	@SuppressWarnings("unchecked")
 	private <OUT, T extends TypeInformation<OUT>> T getTypeInfo(
-			Object source,
-			String sourceName,
-			Class<?> baseSourceClass,
-			TypeInformation<OUT> typeInfo) {
+		Object source,
+		String sourceName,
+		Class<?> baseSourceClass,
+		TypeInformation<OUT> typeInfo) {
 		TypeInformation<OUT> resolvedTypeInfo = typeInfo;
 		if (resolvedTypeInfo == null && source instanceof ResultTypeQueryable) {
 			resolvedTypeInfo = ((ResultTypeQueryable<OUT>) source).getProducedType();
@@ -2219,8 +2102,8 @@ public class StreamExecutionEnvironment {
 		if (resolvedTypeInfo == null) {
 			try {
 				resolvedTypeInfo = TypeExtractor.createTypeInfo(
-						baseSourceClass,
-						source.getClass(), 0, null, null);
+					baseSourceClass,
+					source.getClass(), 0, null, null);
 			} catch (final InvalidTypesException e) {
 				resolvedTypeInfo = (TypeInformation<OUT>) new MissingTypeInfo(sourceName, e);
 			}

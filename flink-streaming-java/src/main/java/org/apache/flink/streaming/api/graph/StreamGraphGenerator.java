@@ -74,6 +74,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * return the IDs of the nodes in the StreamGraph that represent the input transformation. Several
  * IDs can be returned to be able to deal with feedback transformations and unions.
  *
+ * Partitioning, split/select and union不能创建正确的节点在StreamGraph中
  * <p>Partitioning, split/select and union don't create actual nodes in the {@code StreamGraph}. For
  * these, we create a virtual node in the {@code StreamGraph} that holds the specific property, i.e.
  * partitioning, selector and so on. When an edge is created from a virtual node to a downstream
@@ -196,6 +197,10 @@ public class StreamGraphGenerator {
 		this.savepointRestoreSettings = savepointRestoreSettings;
 	}
 
+	/**
+	 * 生成StreamGraph
+	 * @return
+	 */
 	public StreamGraph generate() {
 		streamGraph = new StreamGraph(executionConfig, checkpointConfig, savepointRestoreSettings);
 		streamGraph.setStateBackend(stateBackend);
@@ -209,6 +214,7 @@ public class StreamGraphGenerator {
 		alreadyTransformed = new HashMap<>();
 
 		for (Transformation<?> transformation: transformations) {
+			// 将同一类型的将Transformation创建StreamGraph，并且基于slotGroup进行shardSlot优化
 			transform(transformation);
 		}
 
@@ -668,6 +674,7 @@ public class StreamGraphGenerator {
 	 */
 	private <IN, OUT> Collection<Integer> transformOneInputTransform(OneInputTransformation<IN, OUT> transform) {
 
+		// 递归判断算子的input
 		Collection<Integer> inputIds = transform(transform.getInput());
 
 		// the recursive call might have already transformed this
@@ -675,6 +682,7 @@ public class StreamGraphGenerator {
 			return alreadyTransformed.get(transform);
 		}
 
+		// 共享slot
 		String slotSharingGroup = determineSlotSharingGroup(transform.getSlotSharingGroup(), inputIds);
 
 		streamGraph.addOperator(transform.getId(),
@@ -696,6 +704,7 @@ public class StreamGraphGenerator {
 		streamGraph.setMaxParallelism(transform.getId(), transform.getMaxParallelism());
 
 		for (Integer inputId: inputIds) {
+			// 上游vertexID和下游vertexID构造streamGraph
 			streamGraph.addEdge(inputId, transform.getId(), 0);
 		}
 

@@ -223,6 +223,7 @@ public class ContinuousFileMonitoringFunction<OUT>
 				// is already done.
 
 				break;
+				// 只执行一次
 			case PROCESS_ONCE:
 				synchronized (checkpointLock) {
 

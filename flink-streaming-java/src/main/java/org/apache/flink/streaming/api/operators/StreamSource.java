@@ -63,6 +63,14 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>> extends Abstract
 		run(lockingObject, streamStatusMaintainer, output, operatorChain);
 	}
 
+	/**
+	 * 核心运行方法
+	 * @param lockingObject 锁对象
+	 * @param streamStatusMaintainer 流状态维护者
+	 * @param collector 收集器
+	 * @param operatorChain 算子链
+	 * @throws Exception
+	 */
 	public void run(final Object lockingObject,
 			final StreamStatusMaintainer streamStatusMaintainer,
 			final Output<StreamRecord<OUT>> collector,
@@ -85,8 +93,10 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>> extends Abstract
 				getRuntimeContext().getIndexOfThisSubtask());
 		}
 
+		// 获取waterMarker生产间隔时间
 		final long watermarkInterval = getRuntimeContext().getExecutionConfig().getAutoWatermarkInterval();
 
+		// 创建流执行上下文
 		this.ctx = StreamSourceContexts.getSourceContext(
 			timeCharacteristic,
 			getProcessingTimeService(),
@@ -97,6 +107,7 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>> extends Abstract
 			-1);
 
 		try {
+			// 运行source函数
 			userFunction.run(ctx);
 
 			// if we get here, then the user function either exited after being done (finite source)

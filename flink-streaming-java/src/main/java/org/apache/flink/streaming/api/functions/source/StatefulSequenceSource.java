@@ -31,6 +31,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 /**
+ * 一个有状态的流源，它从给定的间隔中一次发出每个数字（可能是并行发出）。
  * A stateful streaming source that emits each number from a given interval exactly once,
  * possibly in parallel.
  *
@@ -79,21 +80,25 @@ public class StatefulSequenceSource extends RichParallelSourceFunction<Long> imp
 			)
 		);
 
+		// 输出的值，双端队列
 		this.valuesToEmit = new ArrayDeque<>();
+		// 是否从state snapshot中恢复的状态
 		if (context.isRestored()) {
 			// upon restoring
 
+			// 读取状态，让入值输出端
 			for (Long v : this.checkpointedState.get()) {
 				this.valuesToEmit.add(v);
 			}
 		} else {
 			// the first time the job is executed
-
+			//第一次任务执行
 			final int stepSize = getRuntimeContext().getNumberOfParallelSubtasks();
 			final int taskIdx = getRuntimeContext().getIndexOfThisSubtask();
 			final long congruence = start + taskIdx;
 
 			long totalNoOfElements = Math.abs(end - start + 1);
+			// 计算每个并行度上面生成的数字数
 			final int baseSize = safeDivide(totalNoOfElements, stepSize);
 			final int toCollect = (totalNoOfElements % stepSize > taskIdx) ? baseSize + 1 : baseSize;
 

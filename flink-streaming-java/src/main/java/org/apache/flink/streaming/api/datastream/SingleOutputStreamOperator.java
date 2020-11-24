@@ -39,6 +39,7 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.flink.util.Preconditions.checkArgument;
 
 /**
+ * 单一输出类型的流算子
  * {@code SingleOutputStreamOperator} represents a user defined transformation
  * applied on a {@link DataStream} with one predefined output type.
  *
@@ -51,6 +52,7 @@ public class SingleOutputStreamOperator<T> extends DataStream<T> {
 	protected boolean nonParallel = false;
 
 	/**
+	 * 侧边输出
 	 * We keep track of the side outputs that were already requested and their types. With this,
 	 * we can catch the case when a side output with a matching id is requested for a different
 	 * type because this would lead to problems at runtime.

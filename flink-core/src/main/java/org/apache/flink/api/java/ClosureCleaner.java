@@ -71,6 +71,13 @@ public class ClosureCleaner {
 		clean(func, level, checkSerializable, Collections.newSetFromMap(new IdentityHashMap<>()));
 	}
 
+	/**
+	 * 清洗传入function
+	 * @param func
+	 * @param level
+	 * @param checkSerializable
+	 * @param visited
+	 */
 	private static void clean(Object func, ExecutionConfig.ClosureCleanerLevel level, boolean checkSerializable, Set<Object> visited) {
 		if (func == null) {
 			return;
@@ -95,6 +102,7 @@ public class ClosureCleaner {
 		boolean closureAccessed = false;
 
 		for (Field f: cls.getDeclaredFields()) {
+			//
 			if (f.getName().startsWith("this$")) {
 				// found a closure referencing field - now try to clean
 				closureAccessed |= cleanThis0(func, cls, f.getName());

@@ -39,6 +39,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
+ * 串行数据源函数
  * A stream source function that returns a sequence of elements.
  *
  * <p>Upon construction, this source function serializes the elements using Flink's type information.
@@ -58,12 +59,15 @@ public class FromElementsFunction<T> implements SourceFunction<T>, CheckpointedF
 	private final TypeSerializer<T> serializer;
 
 	/** The actual data elements, in serialized form. */
+	// 序列化后的元素
 	private final byte[] elementsSerialized;
 
 	/** The number of serialized elements. */
+	// 序列化元素的个数
 	private final int numElements;
 
 	/** The number of elements emitted already. */
+	// 已经输出的元素
 	private volatile int numElementsEmitted;
 
 	/** The number of elements to skip initially. */
@@ -85,6 +89,7 @@ public class FromElementsFunction<T> implements SourceFunction<T>, CheckpointedF
 		int count = 0;
 		try {
 			for (T element : elements) {
+				// 序列化元素，并且记录序列化元素个数
 				serializer.serialize(element, wrapper);
 				count++;
 			}
@@ -94,7 +99,9 @@ public class FromElementsFunction<T> implements SourceFunction<T>, CheckpointedF
 		}
 
 		this.serializer = serializer;
+		// 序列化与散户
 		this.elementsSerialized = baos.toByteArray();
+		// 序列化元素个数
 		this.numElements = count;
 	}
 
@@ -110,6 +117,7 @@ public class FromElementsFunction<T> implements SourceFunction<T>, CheckpointedF
 			)
 		);
 
+		// 恢复状态
 		if (context.isRestored()) {
 			List<Integer> retrievedStates = new ArrayList<>();
 			for (Integer entry : this.checkpointedState.get()) {
@@ -119,7 +127,7 @@ public class FromElementsFunction<T> implements SourceFunction<T>, CheckpointedF
 			// given that the parallelism of the function is 1, we can only have 1 state
 			Preconditions.checkArgument(retrievedStates.size() == 1,
 				getClass().getSimpleName() + " retrieved invalid state.");
-
+			//跳过的元素，下次读取从这个元素开始读取
 			this.numElementsToSkip = retrievedStates.get(0);
 		}
 	}
@@ -134,6 +142,7 @@ public class FromElementsFunction<T> implements SourceFunction<T>, CheckpointedF
 		if (toSkip > 0) {
 			try {
 				while (toSkip > 0) {
+					// 状态恢复，跳过前n个元素x
 					serializer.deserialize(input);
 					toSkip--;
 				}
@@ -144,9 +153,11 @@ public class FromElementsFunction<T> implements SourceFunction<T>, CheckpointedF
 						"serialization functions.\nSerializer is " + serializer, e);
 			}
 
+			//输出的元素
 			this.numElementsEmitted = this.numElementsToSkip;
 		}
 
+		// 获取checkpoint锁
 		final Object lock = ctx.getCheckpointLock();
 
 		while (isRunning && numElementsEmitted < numElements) {
@@ -160,6 +171,7 @@ public class FromElementsFunction<T> implements SourceFunction<T>, CheckpointedF
 						"serialization functions.\nSerializer is " + serializer, e);
 			}
 
+			// 输出元素
 			synchronized (lock) {
 				ctx.collect(next);
 				numElementsEmitted++;

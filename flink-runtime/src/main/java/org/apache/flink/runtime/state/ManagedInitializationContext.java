@@ -22,6 +22,7 @@ import org.apache.flink.api.common.state.KeyedStateStore;
 import org.apache.flink.api.common.state.OperatorStateStore;
 
 /**
+ * 初始化注册被管理的状态的上下文
  * This interface provides a context in which operators can initialize by registering to managed state (i.e. state that
  * is managed by state backends).
  *
@@ -36,12 +37,14 @@ import org.apache.flink.api.common.state.OperatorStateStore;
 public interface ManagedInitializationContext {
 
 	/**
+	 * 如果从先前执行的快照恢复了状态，则返回true。 对于无状态任务，此操作始终返回false
 	 * Returns true, if state was restored from the snapshot of a previous execution. This returns always false for
 	 * stateless tasks.
 	 */
 	boolean isRestored();
 
 	/**
+	 * 返回一个接口运行注册算子状态到状态后端
 	 * Returns an interface that allows for registering operator state with the backend.
 	 */
 	OperatorStateStore getOperatorStateStore();

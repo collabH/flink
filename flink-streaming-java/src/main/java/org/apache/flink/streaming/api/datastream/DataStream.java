@@ -116,8 +116,14 @@ import java.util.List;
 @Public
 public class DataStream<T> {
 
+	/**
+	 * 流执行环境
+	 */
 	protected final StreamExecutionEnvironment environment;
 
+	/**
+	 * 运行算子
+	 */
 	protected final Transformation<T> transformation;
 
 	/**
