@@ -22,6 +22,7 @@ import org.apache.flink.annotation.Internal;
 import org.apache.flink.configuration.Configuration;
 
 /**
+ * 用于根据提供的Configuration选择和实例化适当的PipelineExecutor的工厂。
  * A factory for selecting and instantiating the adequate {@link PipelineExecutor}
  * based on a provided {@link Configuration}.
  */

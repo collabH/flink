@@ -1651,13 +1651,14 @@ public class StreamExecutionEnvironment {
 
 		try {
 			final JobExecutionResult jobExecutionResult;
-
+			// 判断job运行模式
 			if (configuration.getBoolean(DeploymentOptions.ATTACHED)) {
 				jobExecutionResult = jobClient.getJobExecutionResult(userClassloader).get();
 			} else {
 				jobExecutionResult = new DetachedJobExecutionResult(jobClient.getJobID());
 			}
 
+			// 遍历job监听器，将job执行结果返回
 			jobListeners.forEach(jobListener -> jobListener.onJobExecuted(jobExecutionResult, null));
 
 			return jobExecutionResult;
@@ -1744,6 +1745,7 @@ public class StreamExecutionEnvironment {
 			"Cannot find compatible factory for specified execution.target (=%s)",
 			configuration.get(DeploymentOptions.TARGET));
 
+		// 通过executorFactory得到特定配置的executor
 		CompletableFuture<JobClient> jobClientFuture = executorFactory
 			.getExecutor(configuration)
 			.execute(streamGraph, configuration);

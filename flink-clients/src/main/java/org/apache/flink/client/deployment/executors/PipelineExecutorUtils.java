@@ -49,8 +49,9 @@ public class PipelineExecutorUtils {
 	public static JobGraph getJobGraph(@Nonnull final Pipeline pipeline, @Nonnull final Configuration configuration) throws MalformedURLException {
 		checkNotNull(pipeline);
 		checkNotNull(configuration);
-
+		// 将Configuration封装成ExecutionConfigAccessor
 		final ExecutionConfigAccessor executionConfigAccessor = ExecutionConfigAccessor.fromConfiguration(configuration);
+		// 转换jobGraph
 		final JobGraph jobGraph = FlinkPipelineTranslationUtil
 				.getJobGraph(pipeline, configuration, executionConfigAccessor.getParallelism());
 
@@ -60,6 +61,7 @@ public class PipelineExecutorUtils {
 
 		jobGraph.addJars(executionConfigAccessor.getJars());
 		jobGraph.setClasspaths(executionConfigAccessor.getClasspaths());
+		// savepoint配置
 		jobGraph.setSavepointRestoreSettings(executionConfigAccessor.getSavepointRestoreSettings());
 
 		return jobGraph;

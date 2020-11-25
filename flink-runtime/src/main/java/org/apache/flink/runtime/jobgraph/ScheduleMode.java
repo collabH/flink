@@ -33,6 +33,7 @@ public enum ScheduleMode {
 	LAZY_FROM_SOURCES_WITH_BATCH_SLOT_REQUEST(true),
 
 	/** Schedules all tasks immediately. */
+	//采用Eager调度模式 ( 确保所有的资源都申请到后才开始运行 )
 	EAGER(false);
 
 	private final boolean allowLazyDeployment;
