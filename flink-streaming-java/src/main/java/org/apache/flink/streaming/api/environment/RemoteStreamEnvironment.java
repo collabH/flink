@@ -126,7 +126,7 @@ public class RemoteStreamEnvironment extends StreamExecutionEnvironment {
 	 * @param clientConfiguration
 	 *            The configuration used to parametrize the client that connects to the
 	 *            remote cluster.
-	 * @param jarFiles
+	 * @param jarFiles  用户依赖的jar包
 	 *            The JAR files with code that needs to be shipped to the
 	 *            cluster. If the program uses user-defined functions,
 	 *            user-defined input formats, or any libraries, those must be
@@ -185,6 +185,16 @@ public class RemoteStreamEnvironment extends StreamExecutionEnvironment {
 				savepointRestoreSettings);
 	}
 
+	/**
+	 * 构造configuratin
+	 * @param baseConfiguration
+	 * @param host
+	 * @param port
+	 * @param jars
+	 * @param classpaths
+	 * @param savepointRestoreSettings
+	 * @return
+	 */
 	private static Configuration getEffectiveConfiguration(
 			final Configuration baseConfiguration,
 			final String host,
@@ -193,13 +203,17 @@ public class RemoteStreamEnvironment extends StreamExecutionEnvironment {
 			final List<URL> classpaths,
 			final SavepointRestoreSettings savepointRestoreSettings) {
 
+		// 将客户端传入配置合并
 		final Configuration effectiveConfiguration = new Configuration(baseConfiguration);
 
+		// 设置jobManager配置
 		RemoteEnvironmentConfigUtils.setJobManagerAddressToConfig(host, port, effectiveConfiguration);
+		// 设置执行jar包路径
 		RemoteEnvironmentConfigUtils.setJarURLsToConfig(jars, effectiveConfiguration);
 		ConfigUtils.encodeCollectionToConfig(effectiveConfiguration, PipelineOptions.CLASSPATHS, classpaths, URL::toString);
 
 		if (savepointRestoreSettings != null) {
+			// 设置savepoint配置
 			SavepointRestoreSettings.toConfiguration(savepointRestoreSettings, effectiveConfiguration);
 		} else {
 			SavepointRestoreSettings.toConfiguration(SavepointRestoreSettings.none(), effectiveConfiguration);

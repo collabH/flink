@@ -1876,6 +1876,7 @@ public class StreamExecutionEnvironment {
 	 * executed.
 	 */
 	public static StreamExecutionEnvironment getExecutionEnvironment() {
+		// 解析执行环境创建工程，如果不存在则创建本地执行环境，根据任务运行环境区分
 		return Utils.resolveFactory(threadLocalContextEnvironmentFactory, contextEnvironmentFactory)
 			.map(StreamExecutionEnvironmentFactory::createExecutionEnvironment)
 			.orElseGet(StreamExecutionEnvironment::createLocalEnvironment);
@@ -1920,6 +1921,7 @@ public class StreamExecutionEnvironment {
 	public static LocalStreamEnvironment createLocalEnvironment(int parallelism, Configuration configuration) {
 		final LocalStreamEnvironment currentEnvironment;
 
+		// 创建本地执行环境，传入空配置，并将execution.target设置为local
 		currentEnvironment = new LocalStreamEnvironment(configuration);
 		currentEnvironment.setParallelism(parallelism);
 
@@ -2043,6 +2045,7 @@ public class StreamExecutionEnvironment {
 	//  Methods to control the context and local environments for execution from packaged programs
 	// --------------------------------------------------------------------------------------------
 
+	// 维护本地contextEnvironmentFactory
 	protected static void initializeContextEnvironment(StreamExecutionEnvironmentFactory ctx) {
 		contextEnvironmentFactory = ctx;
 		threadLocalContextEnvironmentFactory.set(contextEnvironmentFactory);
@@ -2087,6 +2090,7 @@ public class StreamExecutionEnvironment {
 	 * @param executable flag indicating whether the file should be executable
 	 */
 	public void registerCachedFile(String filePath, String name, boolean executable) {
+		// 文件映射存储Tuple2元组
 		this.cacheFile.add(new Tuple2<>(name, new DistributedCache.DistributedCacheEntry(filePath, executable)));
 	}
 
