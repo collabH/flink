@@ -120,6 +120,7 @@ public class ExecutionEnvironment {
 
 	// --------------------------------------------------------------------------------------------
 
+	// sink算子数组
 	private final List<DataSink<?>> sinks = new ArrayList<>();
 
 	private final List<Tuple2<String, DistributedCacheEntry>> cacheFile = new ArrayList<>();
@@ -463,6 +464,7 @@ public class ExecutionEnvironment {
 	public DataSource<String> readTextFile(String filePath, String charsetName) {
 		Preconditions.checkNotNull(filePath, "The file path may not be null.");
 
+		// 设置TextInputFormat
 		TextInputFormat format = new TextInputFormat(new Path(filePath));
 		format.setCharsetName(charsetName);
 		return new DataSource<>(this, format, BasicTypeInfo.STRING_TYPE_INFO, Utils.getCallLocationName());
@@ -958,7 +960,7 @@ public class ExecutionEnvironment {
 	@PublicEvolving
 	public JobClient executeAsync(String jobName) throws Exception {
 		checkNotNull(configuration.get(DeploymentOptions.TARGET), "No execution.target specified in your configuration file.");
-
+		// 创建程序执行计划
 		final Plan plan = createProgramPlan(jobName);
 		final PipelineExecutorFactory executorFactory =
 			executorServiceLoader.getExecutorFactory(configuration);

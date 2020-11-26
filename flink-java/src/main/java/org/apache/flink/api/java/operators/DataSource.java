@@ -40,12 +40,16 @@ import org.apache.flink.configuration.Configuration;
 @Public
 public class DataSource<OUT> extends Operator<OUT, DataSource<OUT>> {
 
+	// 输入格式
 	private final InputFormat<OUT, ?> inputFormat;
 
+	// 数据路径名字
 	private final String dataSourceLocationName;
 
+	// 配置
 	private Configuration parameters;
 
+	// 分割数据属性
 	private SplitDataProperties<OUT> splitDataProperties;
 
 	// --------------------------------------------------------------------------------------------

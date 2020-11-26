@@ -46,10 +46,13 @@ import java.util.Arrays;
 @Public
 public class DataSink<T> {
 
+	// 输出格式
 	private final OutputFormat<T> format;
 
+	// 输入数据类型
 	private final TypeInformation<T> type;
 
+	// 数组
 	private final DataSet<T> data;
 
 	private String name;
