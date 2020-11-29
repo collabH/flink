@@ -33,10 +33,12 @@ import org.apache.flink.util.StringUtils;
  */
 @Internal
 public abstract class ExecutorBase implements Executor {
-
+	// 默认Job名称
 	private static final String DEFAULT_JOB_NAME = "Flink Exec Table Job";
 
+	// Job执行环境
 	private final StreamExecutionEnvironment executionEnvironment;
+	// 表配置
 	protected TableConfig tableConfig;
 
 	public ExecutorBase(StreamExecutionEnvironment executionEnvironment) {

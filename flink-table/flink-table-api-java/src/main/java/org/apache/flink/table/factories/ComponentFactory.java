@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 组建工厂
  * A factory interface for components that enables further disambiguating in case
  * there are multiple matching implementations present.
  */

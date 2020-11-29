@@ -29,6 +29,7 @@ import java.util.List;
 
 /**
  * Provides methods for parsing SQL objects from a SQL string.
+ * 将SQL字符串解析成SQL对象
  */
 @Internal
 public interface Parser {

@@ -133,6 +133,7 @@ public final class FunctionCatalog {
 			UnresolvedIdentifier unresolvedIdentifier,
 			FunctionDefinition definition,
 			boolean ignoreIfExists) {
+		// 创建内部的catalog函数
 		registerTemporaryCatalogFunction(unresolvedIdentifier, new InlineCatalogFunction(definition), ignoreIfExists);
 	}
 
@@ -143,10 +144,12 @@ public final class FunctionCatalog {
 			UnresolvedIdentifier unresolvedIdentifier,
 			CatalogFunction catalogFunction,
 			boolean ignoreIfExists) {
+		// 处理函数标识符
 		final ObjectIdentifier identifier = catalogManager.qualifyIdentifier(unresolvedIdentifier);
 		final ObjectIdentifier normalizedIdentifier = FunctionIdentifier.normalizeObjectIdentifier(identifier);
 
 		try {
+			// 校验和前置处理函数
 			validateAndPrepareFunction(catalogFunction);
 		} catch (Throwable t) {
 			throw new ValidationException(
@@ -156,6 +159,7 @@ public final class FunctionCatalog {
 				t);
 		}
 
+		// 放入tempCatalogFunctions内存map中
 		if (!tempCatalogFunctions.containsKey(normalizedIdentifier)) {
 			tempCatalogFunctions.put(normalizedIdentifier, catalogFunction);
 		} else if (!ignoreIfExists) {
@@ -211,6 +215,7 @@ public final class FunctionCatalog {
 		final ObjectPath path = identifier.toObjectPath();
 
 		// we force users to deal with temporary catalog functions first
+		// 判断内存中是否存在
 		if (tempCatalogFunctions.containsKey(normalizedIdentifier)) {
 			if (ignoreIfExists) {
 				return;
@@ -222,6 +227,7 @@ public final class FunctionCatalog {
 					identifier.asSummaryString()));
 		}
 
+		// 判断该catalog是否存在
 		if (catalog.functionExists(path)) {
 			if (ignoreIfExists) {
 				return;
@@ -236,6 +242,7 @@ public final class FunctionCatalog {
 			functionClass.getName(),
 			FunctionLanguage.JAVA);
 		try {
+			// 调用catalog创建函数
 			catalog.createFunction(path, catalogFunction, ignoreIfExists);
 		} catch (Throwable t) {
 			throw new TableException(
@@ -261,6 +268,7 @@ public final class FunctionCatalog {
 		final ObjectPath path = identifier.toObjectPath();
 
 		// we force users to deal with temporary catalog functions first
+		// 优先处理内存中的临时catalog函数
 		if (tempCatalogFunctions.containsKey(normalizedIdentifier)) {
 			throw new ValidationException(
 				String.format(
@@ -502,9 +510,11 @@ public final class FunctionCatalog {
 			String name,
 			CatalogFunction function,
 			boolean ignoreIfExists) {
+		// 将functionName转换为全小写
 		final String normalizedName = FunctionIdentifier.normalizeName(name);
 
 		try {
+			// 校验函数
 			validateAndPrepareFunction(function);
 		} catch (Throwable t) {
 			throw new ValidationException(
@@ -635,6 +645,7 @@ public final class FunctionCatalog {
 			((InlineCatalogFunction) function).getDefinition() instanceof UserDefinedFunction) {
 
 			FunctionDefinition definition = ((InlineCatalogFunction) function).getDefinition();
+			// 清洗函数
 			UserDefinedFunctionHelper.prepareInstance(config, (UserDefinedFunction) definition);
 		} else if (function.getFunctionLanguage() == FunctionLanguage.JAVA) {
 			ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();

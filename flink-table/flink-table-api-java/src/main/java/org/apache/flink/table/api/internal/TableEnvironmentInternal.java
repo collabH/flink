@@ -43,6 +43,7 @@ import java.util.List;
 public interface TableEnvironmentInternal extends TableEnvironment {
 
 	/**
+	 * 返回一个解析SQL的解析器
 	 * Return a {@link Parser} that provides methods for parsing a SQL string.
 	 *
 	 * @return initialized {@link Parser}.
@@ -50,6 +51,7 @@ public interface TableEnvironmentInternal extends TableEnvironment {
 	Parser getParser();
 
 	/**
+	 * 返回catalog管理器
 	 * Returns a {@link CatalogManager} that deals with all catalog objects.
 	 */
 	CatalogManager getCatalogManager();

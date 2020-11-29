@@ -42,9 +42,18 @@ public class StreamExecutor extends ExecutorBase {
 		super(executionEnvironment);
 	}
 
+	/**
+	 * 表执行器，将transformations转换为StreamGraph
+	 * @param transformations list of transformations
+	 * @param tableConfig
+	 * @param jobName what should be the name of the job
+	 * @return
+	 */
 	@Override
 	public Pipeline createPipeline(List<Transformation<?>> transformations, TableConfig tableConfig, String jobName) {
+		// 将transformations转换成StreamGraph
 		StreamGraph streamGraph = ExecutorUtils.generateStreamGraph(getExecutionEnvironment(), transformations);
+		// 设置job名称
 		streamGraph.setJobName(getNonEmptyJobName(jobName));
 		return streamGraph;
 	}

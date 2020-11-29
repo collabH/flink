@@ -58,7 +58,7 @@ class StreamCommonSubGraphBasedOptimizer(planner: StreamPlanner)
     sinkBlocks.foreach { sinkBlock =>
       // don't require update before by default
       sinkBlock.setUpdateBeforeRequired(false)
-
+      // miniBatch优化
       val miniBatchInterval: MiniBatchInterval = if (config.getConfiguration.getBoolean(
         ExecutionConfigOptions.TABLE_EXEC_MINIBATCH_ENABLED)) {
         val miniBatchLatency = getMillisecondFromConfigDuration(config,

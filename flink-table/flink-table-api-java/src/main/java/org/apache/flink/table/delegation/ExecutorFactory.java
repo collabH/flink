@@ -24,6 +24,7 @@ import org.apache.flink.table.factories.ComponentFactory;
 import java.util.Map;
 
 /**
+ * executor工厂
  * Factory that creates {@link Executor}.
  *
  * <p>This factory is used with Java's Service Provider Interfaces (SPI) for discovering. A factory is

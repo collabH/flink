@@ -551,6 +551,7 @@ public final class OperationTreeBuilder {
 
 	public QueryOperation values(DataType rowType, Expression... expressions) {
 		final TableSchema valuesSchema;
+		// 如果存在执行逻辑类型
 		if (LogicalTypeChecks.hasRoot(rowType.getLogicalType(), LogicalTypeRoot.ROW)) {
 			valuesSchema = DataTypeUtils.expandCompositeTypeToSchema(rowType);
 		} else {

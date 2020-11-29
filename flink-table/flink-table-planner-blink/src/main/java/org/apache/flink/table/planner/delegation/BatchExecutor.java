@@ -45,6 +45,7 @@ public class BatchExecutor extends ExecutorBase {
 	@Override
 	public Pipeline createPipeline(List<Transformation<?>> transformations, TableConfig tableConfig, String jobName) {
 		StreamExecutionEnvironment execEnv = getExecutionEnvironment();
+		// 设置table配置
 		ExecutorUtils.setBatchProperties(execEnv, tableConfig);
 		StreamGraph streamGraph = ExecutorUtils.generateStreamGraph(execEnv, transformations);
 		streamGraph.setJobName(getNonEmptyJobName(jobName));

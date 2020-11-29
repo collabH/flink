@@ -33,7 +33,6 @@ import org.apache.flink.table.types.extraction.ExtractionUtils;
 import org.apache.flink.util.InstantiationUtil;
 
 import javax.annotation.Nullable;
-
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -85,7 +84,7 @@ public final class UserDefinedFunctionHelper {
 	 * @return The inferred accumulator type of the AggregateFunction.
 	 */
 	public static <T, ACC> TypeInformation<T> getReturnTypeOfAggregateFunction(
-			ImperativeAggregateFunction<T, ACC> aggregateFunction) {
+		ImperativeAggregateFunction<T, ACC> aggregateFunction) {
 		return getReturnTypeOfAggregateFunction(aggregateFunction, null);
 	}
 
@@ -93,13 +92,12 @@ public final class UserDefinedFunctionHelper {
 	 * Tries to infer the TypeInformation of an AggregateFunction's accumulator type.
 	 *
 	 * @param aggregateFunction The AggregateFunction for which the accumulator type is inferred.
-	 * @param scalaType The implicitly inferred type of the accumulator type.
-	 *
+	 * @param scalaType         The implicitly inferred type of the accumulator type.
 	 * @return The inferred accumulator type of the AggregateFunction.
 	 */
 	public static <T, ACC> TypeInformation<T> getReturnTypeOfAggregateFunction(
-			ImperativeAggregateFunction<T, ACC> aggregateFunction,
-			TypeInformation<T> scalaType) {
+		ImperativeAggregateFunction<T, ACC> aggregateFunction,
+		TypeInformation<T> scalaType) {
 
 		TypeInformation<T> userProvidedType = aggregateFunction.getResultType();
 		if (userProvidedType != null) {
@@ -122,7 +120,7 @@ public final class UserDefinedFunctionHelper {
 	 * @return The inferred accumulator type of the AggregateFunction.
 	 */
 	public static <T, ACC> TypeInformation<ACC> getAccumulatorTypeOfAggregateFunction(
-			ImperativeAggregateFunction<T, ACC> aggregateFunction) {
+		ImperativeAggregateFunction<T, ACC> aggregateFunction) {
 		return getAccumulatorTypeOfAggregateFunction(aggregateFunction, null);
 	}
 
@@ -130,13 +128,12 @@ public final class UserDefinedFunctionHelper {
 	 * Tries to infer the TypeInformation of an AggregateFunction's accumulator type.
 	 *
 	 * @param aggregateFunction The AggregateFunction for which the accumulator type is inferred.
-	 * @param scalaType The implicitly inferred type of the accumulator type.
-	 *
+	 * @param scalaType         The implicitly inferred type of the accumulator type.
 	 * @return The inferred accumulator type of the AggregateFunction.
 	 */
 	public static <T, ACC> TypeInformation<ACC> getAccumulatorTypeOfAggregateFunction(
-			ImperativeAggregateFunction<T, ACC> aggregateFunction,
-			TypeInformation<ACC> scalaType) {
+		ImperativeAggregateFunction<T, ACC> aggregateFunction,
+		TypeInformation<ACC> scalaType) {
 
 		TypeInformation<ACC> userProvidedType = aggregateFunction.getAccumulatorType();
 		if (userProvidedType != null) {
@@ -166,12 +163,12 @@ public final class UserDefinedFunctionHelper {
 	 * Tries to infer the TypeInformation of an AggregateFunction's accumulator type.
 	 *
 	 * @param tableFunction The TableFunction for which the accumulator type is inferred.
-	 * @param scalaType The implicitly inferred type of the accumulator type.
+	 * @param scalaType     The implicitly inferred type of the accumulator type.
 	 * @return The inferred accumulator type of the AggregateFunction.
 	 */
 	public static <T> TypeInformation<T> getReturnTypeOfTableFunction(
-			TableFunction<T> tableFunction,
-			TypeInformation<T> scalaType) {
+		TableFunction<T> tableFunction,
+		TypeInformation<T> scalaType) {
 
 		TypeInformation<T> userProvidedType = tableFunction.getResultType();
 		if (userProvidedType != null) {
@@ -194,10 +191,10 @@ public final class UserDefinedFunctionHelper {
 	 */
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	public static UserDefinedFunction instantiateFunction(
-			ClassLoader classLoader,
-			@Nullable ReadableConfig config,
-			String name,
-			CatalogFunction catalogFunction) {
+		ClassLoader classLoader,
+		@Nullable ReadableConfig config,
+		String name,
+		CatalogFunction catalogFunction) {
 		try {
 			switch (catalogFunction.getFunctionLanguage()) {
 				case PYTHON:
@@ -226,6 +223,7 @@ public final class UserDefinedFunctionHelper {
 	 * Instantiates a {@link UserDefinedFunction} assuming a JVM function with default constructor.
 	 */
 	public static UserDefinedFunction instantiateFunction(Class<? extends UserDefinedFunction> functionClass) {
+		// 校验类是否合法
 		validateClass(functionClass, true);
 		try {
 			return functionClass.newInstance();
@@ -262,11 +260,11 @@ public final class UserDefinedFunctionHelper {
 	 * are known.
 	 */
 	public static void validateClassForRuntime(
-			Class<? extends UserDefinedFunction> functionClass,
-			String methodName,
-			Class<?>[] argumentClasses,
-			Class<?> outputClass,
-			String functionName) {
+		Class<? extends UserDefinedFunction> functionClass,
+		String methodName,
+		Class<?>[] argumentClasses,
+		Class<?> outputClass,
+		String functionName) {
 		final List<Method> methods = ExtractionUtils.collectMethods(functionClass, methodName);
 		// verifies regular JVM calling semantics
 		final boolean isMatching = methods.stream()
@@ -291,12 +289,13 @@ public final class UserDefinedFunctionHelper {
 	 * Validates a {@link UserDefinedFunction} class for usage in the API.
 	 */
 	private static void validateClass(
-			Class<? extends UserDefinedFunction> functionClass,
-			boolean requiresDefaultConstructor) {
+		Class<? extends UserDefinedFunction> functionClass,
+		boolean requiresDefaultConstructor) {
 		if (TableFunction.class.isAssignableFrom(functionClass)) {
 			validateNotSingleton(functionClass);
 		}
 		validateInstantiation(functionClass, requiresDefaultConstructor);
+		// 校验是否实现了特定UDF的特定方法
 		validateImplementationMethods(functionClass);
 	}
 
@@ -340,10 +339,10 @@ public final class UserDefinedFunctionHelper {
 	 * Validates an implementation method such as {@code eval()} or {@code accumulate()}.
 	 */
 	private static void validateImplementationMethod(
-			Class<? extends UserDefinedFunction> clazz,
-			boolean rejectStatic,
-			boolean isOptional,
-			String... methodNameOptions) {
+		Class<? extends UserDefinedFunction> clazz,
+		boolean rejectStatic,
+		boolean isOptional,
+		String... methodNameOptions) {
 		final Set<String> nameSet = new HashSet<>(Arrays.asList(methodNameOptions));
 		final List<Method> methods = getAllDeclaredMethods(clazz);
 		boolean found = false;
@@ -413,6 +412,7 @@ public final class UserDefinedFunctionHelper {
 	 * non-static inner function classes.
 	 */
 	private static void cleanFunction(ReadableConfig config, UserDefinedFunction function) {
+//通过删除对外部类的任何引用来修改函数实例。 这将启用非静态内部函数类。
 		final ClosureCleanerLevel level = config.get(PipelineOptions.CLOSURE_CLEANER_LEVEL);
 		try {
 			ClosureCleaner.clean(function, level, true);

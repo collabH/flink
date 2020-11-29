@@ -70,7 +70,7 @@ public interface TableFactory {
 	 *   - format.fields.#.name
 	 *
 	 * <p>Note: Use "#" to denote an array of values where "#" represents one or more digits. Property
-	 * versions like "format.property-version" must not be part of the supported properties.
+	 * versions like "format.property-v ersion" must not be part of the supported properties.
 	 *
 	 * <p>In some cases it might be useful to declare wildcards "*". Wildcards can only be declared at
 	 * the end of a property key.

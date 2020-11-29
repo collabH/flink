@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ *
  * Factory to create an implementation of {@link Executor} to use in a
  * {@link org.apache.flink.table.api.TableEnvironment}. The {@link org.apache.flink.table.api.TableEnvironment}
  * should use {@link #create(Map)} method that does not bind to any particular environment,
@@ -49,6 +50,7 @@ public class BlinkExecutorFactory implements ExecutorFactory {
 	 * @return instance of a {@link Executor}
 	 */
 	public Executor create(Map<String, String> properties, StreamExecutionEnvironment executionEnvironment) {
+		// 根据对应模式创建
 		if (Boolean.valueOf(properties.getOrDefault(EnvironmentSettings.STREAMING_MODE, "true"))) {
 			return new StreamExecutor(executionEnvironment);
 		} else {

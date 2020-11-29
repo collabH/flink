@@ -45,14 +45,17 @@ import java.util.function.Supplier;
 
 /**
  * Implementation of {@link Parser} that uses Calcite.
+ *  blink parser
  */
 public class ParserImpl implements Parser {
 
+	// catalog管理器
 	private final CatalogManager catalogManager;
 
 	// we use supplier pattern here in order to use the most up to
 	// date configuration. Users might change the parser configuration in a TableConfig in between
 	// multiple statements parsing
+	// 校验器提供器
 	private final Supplier<FlinkPlannerImpl> validatorSupplier;
 	private final Supplier<CalciteParser> calciteParserSupplier;
 	private final Function<TableSchema, SqlExprToRexConverter> sqlExprToRexConverterCreator;
@@ -72,7 +75,7 @@ public class ParserImpl implements Parser {
 	public List<Operation> parse(String statement) {
 		CalciteParser parser = calciteParserSupplier.get();
 		FlinkPlannerImpl planner = validatorSupplier.get();
-		// parse the sql query
+		// parse the sql query，解析SQL
 		SqlNode parsed = parser.parse(statement);
 
 		Operation operation = SqlToOperationConverter.convert(planner, catalogManager, parsed)
@@ -91,6 +94,7 @@ public class ParserImpl implements Parser {
 	public ResolvedExpression parseSqlExpression(String sqlExpression, TableSchema inputSchema) {
 		SqlExprToRexConverter sqlExprToRexConverter = sqlExprToRexConverterCreator.apply(inputSchema);
 		RexNode rexNode = sqlExprToRexConverter.convertToRexNode(sqlExpression);
+		// 转换成逻辑类型
 		LogicalType logicalType = FlinkTypeFactory.toLogicalType(rexNode.getType());
 		return new RexNodeExpression(rexNode, TypeConversions.fromLogicalToDataType(logicalType));
 	}

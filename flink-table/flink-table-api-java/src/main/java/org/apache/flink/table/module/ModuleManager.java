@@ -64,6 +64,7 @@ public class ModuleManager {
 		checkArgument(!StringUtils.isNullOrWhitespaceOnly(name), "name cannot be null or empty string");
 		checkNotNull(module, "module cannot be null");
 
+		// 类似于catalog操作
 		if (!modules.containsKey(name)) {
 			modules.put(name, module);
 

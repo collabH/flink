@@ -70,6 +70,7 @@ public final class CatalogManager {
 
 	// Those tables take precedence over corresponding permanent tables, thus they shadow
 	// tables coming from catalogs.
+	// 临时表
 	private Map<ObjectIdentifier, CatalogBaseTable> temporaryTables;
 
 	// The name of the current catalog and database
@@ -77,11 +78,13 @@ public final class CatalogManager {
 
 	private String currentDatabaseName;
 
+	// schema解析器
 	private CatalogTableSchemaResolver schemaResolver;
 
 	// The name of the built-in catalog
 	private final String builtInCatalogName;
 
+	// 数据类型工厂
 	private final DataTypeFactory typeFactory;
 
 	private CatalogManager(
@@ -180,14 +183,19 @@ public final class CatalogManager {
 	 * @throws CatalogException if the registration of the catalog under the given name failed
 	 */
 	public void registerCatalog(String catalogName, Catalog catalog) {
+		// 校验catalogname是否合法
 		checkArgument(!StringUtils.isNullOrWhitespaceOnly(catalogName), "Catalog name cannot be null or empty.");
+		// 校验catalog
 		checkNotNull(catalog, "Catalog cannot be null");
 
+		// 判断catalog是否已经存在
 		if (catalogs.containsKey(catalogName)) {
 			throw new CatalogException(format("Catalog %s already exists.", catalogName));
 		}
 
+		// 将catalog放入catalogs linkedHashMap有序链表map中
 		catalogs.put(catalogName, catalog);
+		// 初始化catalog链接
 		catalog.open();
 	}
 
@@ -367,6 +375,7 @@ public final class CatalogManager {
 	 */
 	public Optional<TableLookupResult> getTable(ObjectIdentifier objectIdentifier) {
 		Preconditions.checkNotNull(schemaResolver, "schemaResolver should not be null");
+		// 获取临时表不存在从catalog中获取
 		CatalogBaseTable temporaryTable = temporaryTables.get(objectIdentifier);
 		if (temporaryTable != null) {
 			TableSchema resolvedSchema = resolveTableSchema(temporaryTable);

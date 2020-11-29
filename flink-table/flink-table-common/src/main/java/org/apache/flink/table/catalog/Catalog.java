@@ -89,7 +89,7 @@ public interface Catalog {
 
 	/**
 	 * Open the catalog. Used for any required preparation in initialization phase.
-	 *
+	 *打开catalog。用于初始化阶段的任何所需准备。
 	 * @throws CatalogException in case of any runtime exception
 	 */
 	void open() throws CatalogException;
