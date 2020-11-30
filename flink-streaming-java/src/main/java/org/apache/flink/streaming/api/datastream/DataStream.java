@@ -221,9 +221,11 @@ public class DataStream<T> {
 	@SafeVarargs
 	public final DataStream<T> union(DataStream<T>... streams) {
 		List<Transformation<T>> unionedTransforms = new ArrayList<>();
+		// 将当前算子将入union算子列表
 		unionedTransforms.add(this.transformation);
 
 		for (DataStream<T> newStream : streams) {
+			// 每个流输出类型必须一致
 			if (!getType().equals(newStream.getType())) {
 				throw new IllegalArgumentException("Cannot union streams of different types: "
 						+ getType() + " and " + newStream.getType());
@@ -231,6 +233,7 @@ public class DataStream<T> {
 
 			unionedTransforms.add(newStream.getTransformation());
 		}
+		// 重新包装算子为Uinon算子
 		return new DataStream<>(this.environment, new UnionTransformation<>(unionedTransforms));
 	}
 
@@ -412,6 +415,7 @@ public class DataStream<T> {
 	 * @see KeySelector
 	 */
 	public <K> DataStream<T> partitionCustom(Partitioner<K> partitioner, KeySelector<T, K> keySelector) {
+		// 使用自定义分区器对key选择器的键进行分区
 		return setConnectionType(new CustomPartitionerWrapper<>(clean(partitioner),
 				clean(keySelector)));
 	}
@@ -450,6 +454,7 @@ public class DataStream<T> {
 	public BroadcastStream<T> broadcast(final MapStateDescriptor<?, ?>... broadcastStateDescriptors) {
 		Preconditions.checkNotNull(broadcastStateDescriptors);
 		final DataStream<T> broadcastStream = setConnectionType(new BroadcastPartitioner<>());
+		// 构造广播状态
 		return new BroadcastStream<>(environment, broadcastStream, broadcastStateDescriptors);
 	}
 
@@ -524,6 +529,7 @@ public class DataStream<T> {
 	}
 
 	/**
+	 * todo
 	 * Initiates an iterative part of the program that feeds back data streams.
 	 * The iterative part needs to be closed by calling
 	 * {@link IterativeStream#closeWith(DataStream)}. The transformation of

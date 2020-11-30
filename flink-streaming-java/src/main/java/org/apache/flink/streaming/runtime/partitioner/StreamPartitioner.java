@@ -31,7 +31,7 @@ import java.io.Serializable;
 public abstract class StreamPartitioner<T> implements
 		ChannelSelector<SerializationDelegate<StreamRecord<T>>>, Serializable {
 	private static final long serialVersionUID = 1L;
-
+	//channel总数
 	protected int numberOfChannels;
 
 	@Override

@@ -47,11 +47,12 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 @Internal
 public class RescalePartitioner<T> extends StreamPartitioner<T> {
 	private static final long serialVersionUID = 1L;
-
+	//下个发送的管道
 	private int nextChannelToSendTo = -1;
 
 	@Override
 	public int selectChannel(SerializationDelegate<StreamRecord<T>> record) {
+		// 如果大于则nextChannelToSendTo设置为0
 		if (++nextChannelToSendTo >= numberOfChannels) {
 			nextChannelToSendTo = 0;
 		}

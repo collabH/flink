@@ -257,7 +257,7 @@ public abstract class Transformation<T> {
 
 	/**
 	 * Gets the minimum resource of this stream transformation.
-	 *
+	 * 获取流使用的最小的资源
 	 * @return The minimum resource of this transformation.
 	 */
 	public ResourceSpec getMinResources() {
@@ -265,6 +265,7 @@ public abstract class Transformation<T> {
 	}
 
 	/**
+	 * 首选的资源配置
 	 * Gets the preferred resource of this stream transformation.
 	 *
 	 * @return The preferred resource of this transformation.
@@ -274,6 +275,8 @@ public abstract class Transformation<T> {
 	}
 
 	/**
+	 * 设置托管内存权重，该权重指示此转换在多大程度上依赖于托管内存，
+	 * 以便转换高度依赖于托管内存将能够在运行时获取更多托管内存（线性关联）。 默认权重值为1。请注意，当前仅在资源未知的情况下才可以设置权重
 	 * Set the managed memory weight which indicates how much this transformation relies
 	 * on managed memory, so that a transformation highly relies on managed memory would
 	 * be able to acquire more managed memory in runtime (linear association). The default
@@ -325,9 +328,11 @@ public abstract class Transformation<T> {
 	public void setUidHash(String uidHash) {
 
 		Preconditions.checkNotNull(uidHash);
+		// 校验hashcode为大小写26字母和0到9的数字，并且个数为32个
 		Preconditions.checkArgument(uidHash.matches("^[0-9A-Fa-f]{32}$"),
 				"Node hash must be a 32 character String that describes a hex code. Found: " + uidHash);
 
+		// 用于提供的hashNode
 		this.userProvidedNodeHash = uidHash;
 	}
 
@@ -464,6 +469,7 @@ public abstract class Transformation<T> {
 	}
 
 	/**
+	 * 表示处理数据的缓存时间，越低延迟越低，-1表示为默认的缓冲区超时，0的话表示不缓存，但是系统吞吐量会下降
 	 * Set the buffer timeout of this {@code Transformation}. The timeout defines how long data
 	 * may linger in a partially full buffer before being sent over the network.
 	 *

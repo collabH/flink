@@ -24,6 +24,7 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
+ * 通过循环通过输出通道来平均分配数据的分区程序
  * Partitioner that distributes the data equally by cycling through the output
  * channels.
  *
