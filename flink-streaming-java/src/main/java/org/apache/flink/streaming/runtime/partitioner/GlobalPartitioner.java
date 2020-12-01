@@ -30,6 +30,7 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 public class GlobalPartitioner<T> extends StreamPartitioner<T> {
 	private static final long serialVersionUID = 1L;
 
+	// 永远为实例1
 	@Override
 	public int selectChannel(SerializationDelegate<StreamRecord<T>> record) {
 		return 0;
