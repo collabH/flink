@@ -36,6 +36,7 @@ public class StreamFilter<IN> extends AbstractUdfStreamOperator<IN, FilterFuncti
 
 	@Override
 	public void processElement(StreamRecord<IN> element) throws Exception {
+		// 调用udf
 		if (userFunction.filter(element.getValue())) {
 			output.collect(element);
 		}

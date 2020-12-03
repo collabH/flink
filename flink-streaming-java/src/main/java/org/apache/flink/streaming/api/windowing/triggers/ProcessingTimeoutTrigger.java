@@ -45,9 +45,13 @@ public class ProcessingTimeoutTrigger<T, W extends Window> extends Trigger<T, W>
 
 	private static final long serialVersionUID = 1L;
 
+	// 内嵌的触发器
 	private final Trigger<T, W> nestedTrigger;
+	// Trigger触发的间隔
 	private final long interval;
+	// 新纪录是否重设timer
 	private final boolean resetTimerOnNewRecord;
+	// 超时窗口是否清理
 	private final boolean shouldClearOnTimeout;
 
 	private final ValueStateDescriptor<Long> timeoutStateDesc;
@@ -67,23 +71,29 @@ public class ProcessingTimeoutTrigger<T, W extends Window> extends Trigger<T, W>
 	@Override
 	public TriggerResult onElement(T element, long timestamp, W window, TriggerContext ctx)
 			throws Exception {
+		// 记录塞入内嵌触发器
 		TriggerResult triggerResult = this.nestedTrigger.onElement(element, timestamp, window, ctx);
+		// 如果可以输出则输出
 		if (triggerResult.isFire()) {
 			this.clear(window, ctx);
 			return triggerResult;
 		}
 
 		ValueState<Long> timeoutState = ctx.getPartitionedState(this.timeoutStateDesc);
+		// 下次触发的时间
 		long nextFireTimestamp = ctx.getCurrentProcessingTime() + this.interval;
 		Long timeoutTimestamp = timeoutState.value();
+		// 如果新纪录就清空计时器和超时
 		if (timeoutTimestamp != null && resetTimerOnNewRecord) {
 			ctx.deleteProcessingTimeTimer(timeoutTimestamp);
 			timeoutState.clear();
 			timeoutTimestamp = null;
 		}
-
+		// 第一次没有获取
 		if (timeoutTimestamp == null) {
+			// 将下次窗口触发时间放入timeoutState
 			timeoutState.update(nextFireTimestamp);
+			// 注册定时器
 			ctx.registerProcessingTimeTimer(nextFireTimestamp);
 		}
 
@@ -93,7 +103,9 @@ public class ProcessingTimeoutTrigger<T, W extends Window> extends Trigger<T, W>
 	@Override
 	public TriggerResult onProcessingTime(long timestamp, W window, TriggerContext ctx)
 			throws Exception {
+		//调用内嵌trigger的onProcessingTime方法
 		TriggerResult triggerResult = this.nestedTrigger.onProcessingTime(timestamp, window, ctx);
+		// 如果需要清空，则清空
 		if (shouldClearOnTimeout) {
 			this.clear(window, ctx);
 		}

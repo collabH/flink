@@ -46,19 +46,21 @@ public abstract class WindowAssigner<T, W extends Window> implements Serializabl
 
 	/**
 	 * Returns a {@code Collection} of windows that should be assigned to the element.
-	 *
-	 * @param element The element to which windows should be assigned.
-	 * @param timestamp The timestamp of the element.
+	 * 返回一个Collection应分配给该元素的窗口
+	 * @param element The element to which windows should be assigned. 窗口应分配到的元素。
+	 * @param timestamp The timestamp of the element. 元素时间戳
 	 * @param context The {@link WindowAssignerContext} in which the assigner operates.
 	 */
 	public abstract Collection<W> assignWindows(T element, long timestamp, WindowAssignerContext context);
 
 	/**
+	 * 返回默认的trigger
 	 * Returns the default trigger associated with this {@code WindowAssigner}.
 	 */
 	public abstract Trigger<T, W> getDefaultTrigger(StreamExecutionEnvironment env);
 
 	/**
+	 * 返回窗口序列化器
 	 * Returns a {@link TypeSerializer} for serializing windows that are assigned by
 	 * this {@code WindowAssigner}.
 	 */

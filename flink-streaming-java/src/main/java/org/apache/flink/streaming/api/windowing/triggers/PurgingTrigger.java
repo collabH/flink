@@ -41,6 +41,15 @@ public class PurgingTrigger<T, W extends Window> extends Trigger<T, W> {
 		this.nestedTrigger = nestedTrigger;
 	}
 
+	/**
+	 * 如果为fire则为fire_purge触发结果
+	 * @param element The element that arrived.
+	 * @param timestamp The timestamp of the element that arrived.
+	 * @param window The window to which the element is being added.
+	 * @param ctx A context object that can be used to register timer callbacks.
+	 * @return
+	 * @throws Exception
+	 */
 	@Override
 	public TriggerResult onElement(T element, long timestamp, W window, TriggerContext ctx) throws Exception {
 		TriggerResult triggerResult = nestedTrigger.onElement(element, timestamp, window, ctx);

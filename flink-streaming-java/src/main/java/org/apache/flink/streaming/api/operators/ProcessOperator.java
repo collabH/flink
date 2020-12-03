@@ -63,16 +63,22 @@ public class ProcessOperator<IN, OUT>
 	public void processElement(StreamRecord<IN> element) throws Exception {
 		collector.setTimestamp(element);
 		context.element = element;
+		// 处理元素
 		userFunction.processElement(element.getValue(), context, collector);
 		context.element = null;
 	}
 
+	// 处理watermark，维护processTime的Watermark
 	@Override
 	public void processWatermark(Watermark mark) throws Exception {
 		super.processWatermark(mark);
+		// 记录当前currentWatermark
 		this.currentWatermark = mark.getTimestamp();
 	}
 
+	/**
+	 * opeartor算子process函数，仅支持opeartor state，不支持keyedState和EventTime
+	 */
 	private class ContextImpl extends ProcessFunction<IN, OUT>.Context implements TimerService {
 		private StreamRecord<IN> element;
 
@@ -94,11 +100,13 @@ public class ProcessOperator<IN, OUT>
 			}
 		}
 
+		// 侧边输出
 		@Override
 		public <X> void output(OutputTag<X> outputTag, X value) {
 			if (outputTag == null) {
 				throw new IllegalArgumentException("OutputTag must not be null.");
 			}
+			// 将记录放入Output
 			output.collect(outputTag, new StreamRecord<>(value, element.getTimestamp()));
 		}
 

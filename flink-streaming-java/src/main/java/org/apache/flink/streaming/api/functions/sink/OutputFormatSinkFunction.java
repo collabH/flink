@@ -49,6 +49,7 @@ public class OutputFormatSinkFunction<IN> extends RichSinkFunction<IN> implement
 
 	private static final Logger LOG = LoggerFactory.getLogger(OutputFormatSinkFunction.class);
 
+	// 对应的output格式
 	private OutputFormat<IN> format;
 	private boolean cleanupCalled = false;
 
@@ -58,10 +59,15 @@ public class OutputFormatSinkFunction<IN> extends RichSinkFunction<IN> implement
 
 	@Override
 	public void open(Configuration parameters) throws Exception {
+		// 获取运行上下文
 		RuntimeContext context = getRuntimeContext();
+		// 配置放入对应outputFormat中
 		format.configure(parameters);
+		// 获取subTask的index
 		int indexInSubtaskGroup = context.getIndexOfThisSubtask();
+		// 获取并行subTask的个数
 		int currentNumberOfSubtasks = context.getNumberOfParallelSubtasks();
+		// 用于并行写
 		format.open(indexInSubtaskGroup, currentNumberOfSubtasks);
 	}
 

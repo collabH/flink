@@ -104,6 +104,7 @@ public class CoGroupedStreams<T1, T2> {
 	 */
 	public <KEY> Where<KEY> where(KeySelector<T1, KEY> keySelector)  {
 		Preconditions.checkNotNull(keySelector);
+		// 校验类型是否一致
 		final TypeInformation<KEY> keyType = TypeExtractor.getKeySelectorTypes(keySelector, input1.getType());
 		return where(keySelector, keyType);
 	}
@@ -117,6 +118,7 @@ public class CoGroupedStreams<T1, T2> {
 	public <KEY> Where<KEY> where(KeySelector<T1, KEY> keySelector, TypeInformation<KEY> keyType)  {
 		Preconditions.checkNotNull(keySelector);
 		Preconditions.checkNotNull(keyType);
+		// 指定关联键
 		return new Where<>(input1.clean(keySelector), keyType);
 	}
 
@@ -182,6 +184,7 @@ public class CoGroupedStreams<T1, T2> {
 			}
 
 			/**
+			 * 指定双流窗口函数
 			 * Specifies the window on which the co-group operation works.
 			 */
 			@PublicEvolving
@@ -214,8 +217,10 @@ public class CoGroupedStreams<T1, T2> {
 
 		private final WindowAssigner<? super TaggedUnion<T1, T2>, W> windowAssigner;
 
+		// 窗口触发计算的时机
 		private final Trigger<? super TaggedUnion<T1, T2>, ? super W> trigger;
 
+		// 窗口计算的范围
 		private final Evictor<? super TaggedUnion<T1, T2>, ? super W> evictor;
 
 		private final Time allowedLateness;
@@ -338,12 +343,15 @@ public class CoGroupedStreams<T1, T2> {
 					.setParallelism(input2.getParallelism())
 					.returns(unionType);
 
+			// 双流union
 			DataStream<TaggedUnion<T1, T2>> unionStream = taggedInput1.union(taggedInput2);
 
 			// we explicitly create the keyed stream to manually pass the key type information in
+			// 包装成窗口流
 			windowedStream =
 					new KeyedStream<TaggedUnion<T1, T2>, KEY>(unionStream, unionKeySelector, keyType)
 					.window(windowAssigner);
+
 
 			if (trigger != null) {
 				windowedStream.trigger(trigger);

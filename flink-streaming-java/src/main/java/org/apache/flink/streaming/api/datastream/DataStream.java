@@ -529,7 +529,6 @@ public class DataStream<T> {
 	}
 
 	/**
-	 * todo
 	 * Initiates an iterative part of the program that feeds back data streams.
 	 * The iterative part needs to be closed by calling
 	 * {@link IterativeStream#closeWith(DataStream)}. The transformation of
@@ -613,7 +612,9 @@ public class DataStream<T> {
 	 */
 	public <R> SingleOutputStreamOperator<R> map(MapFunction<T, R> mapper) {
 
+		// 返回map函数返回类型
 		TypeInformation<R> outType = TypeExtractor.getMapReturnTypes(clean(mapper), getType(),
+				// 代码调用地址
 				Utils.getCallLocationName(), true);
 
 		return map(mapper, outType);
@@ -682,7 +683,6 @@ public class DataStream<T> {
 	 */
 	public <R> SingleOutputStreamOperator<R> flatMap(FlatMapFunction<T, R> flatMapper, TypeInformation<R> outputType) {
 		return transform("Flat Map", outputType, new StreamFlatMap<>(clean(flatMapper)));
-
 	}
 
 	/**
@@ -812,8 +812,10 @@ public class DataStream<T> {
 	 */
 	public AllWindowedStream<T, TimeWindow> timeWindowAll(Time size) {
 		if (environment.getStreamTimeCharacteristic() == TimeCharacteristic.ProcessingTime) {
+			//传递ProcessingTime滚动窗口
 			return windowAll(TumblingProcessingTimeWindows.of(size));
 		} else {
+			// 传递EventTime滚动窗口
 			return windowAll(TumblingEventTimeWindows.of(size));
 		}
 	}
@@ -833,8 +835,10 @@ public class DataStream<T> {
 	 */
 	public AllWindowedStream<T, TimeWindow> timeWindowAll(Time size, Time slide) {
 		if (environment.getStreamTimeCharacteristic() == TimeCharacteristic.ProcessingTime) {
+			//传递ProcessingTime滑动窗口
 			return windowAll(SlidingProcessingTimeWindows.of(size, slide));
 		} else {
+			// 传递EventTime滑动窗口
 			return windowAll(SlidingEventTimeWindows.of(size, slide));
 		}
 	}
@@ -848,6 +852,7 @@ public class DataStream<T> {
 	 * @param size The size of the windows in number of elements.
 	 */
 	public AllWindowedStream<T, GlobalWindow> countWindowAll(long size) {
+		// 创建全局窗口assinger，设置countTrigger
 		return windowAll(GlobalWindows.create()).trigger(PurgingTrigger.of(CountTrigger.of(size)));
 	}
 
@@ -861,6 +866,7 @@ public class DataStream<T> {
 	 * @param slide The slide interval in number of elements.
 	 */
 	public AllWindowedStream<T, GlobalWindow> countWindowAll(long size, long slide) {
+		// 滚动count，在前size条找slide记录
 		return windowAll(GlobalWindows.create())
 				.evictor(CountEvictor.of(size))
 				.trigger(CountTrigger.of(slide));
@@ -914,8 +920,9 @@ public class DataStream<T> {
 	public SingleOutputStreamOperator<T> assignTimestampsAndWatermarks(
 			WatermarkStrategy<T> watermarkStrategy) {
 
+		// 清理传入函数，包含成员变量可见性等
 		final WatermarkStrategy<T> cleanedStrategy = clean(watermarkStrategy);
-
+		// 将策略转换成 TimestampsAndWatermarksOperator
 		final TimestampsAndWatermarksOperator<T> operator =
 			new TimestampsAndWatermarksOperator<>(cleanedStrategy);
 
@@ -984,6 +991,7 @@ public class DataStream<T> {
 	 */
 	@PublicEvolving
 	public DataStreamSink<T> print() {
+		// print函数
 		PrintSinkFunction<T> printFunction = new PrintSinkFunction<>();
 		return addSink(printFunction).name("Print to Std. Out");
 	}
@@ -1054,6 +1062,7 @@ public class DataStream<T> {
 	@Deprecated
 	@PublicEvolving
 	public DataStreamSink<T> writeAsText(String path) {
+		// 按照Text格式写入对应path，根据path解析出不同的FileSystem，然后将二进制数据写入Fs
 		return writeUsingOutputFormat(new TextOutputFormat<T>(new Path(path)));
 	}
 
@@ -1213,6 +1222,7 @@ public class DataStream<T> {
 	}
 
 	/**
+	 * 传递用户定义的运算符以及将转换DataStream的类型信息的方法
 	 * Method for passing user defined operators along with the type
 	 * information that will transform the DataStream.
 	 *
@@ -1264,7 +1274,7 @@ public class DataStream<T> {
 
 		// read the output type of the input Transform to coax out errors about MissingTypeInfo
 		transformation.getOutputType();
-
+		// 创建单输入算子
 		OneInputTransformation<T, R> resultTransform = new OneInputTransformation<>(
 				this.transformation,
 				operatorName,
@@ -1275,6 +1285,7 @@ public class DataStream<T> {
 		@SuppressWarnings({"unchecked", "rawtypes"})
 		SingleOutputStreamOperator<R> returnStream = new SingleOutputStreamOperator(environment, resultTransform);
 
+		// 添加到dag算子链条
 		getExecutionEnvironment().addOperator(resultTransform);
 
 		return returnStream;
@@ -1309,11 +1320,11 @@ public class DataStream<T> {
 		if (sinkFunction instanceof InputTypeConfigurable) {
 			((InputTypeConfigurable) sinkFunction).setInputType(getType(), getExecutionConfig());
 		}
-
+		// 包装成StreamSink
 		StreamSink<T> sinkOperator = new StreamSink<>(clean(sinkFunction));
 
 		DataStreamSink<T> sink = new DataStreamSink<>(this, sinkOperator);
-
+		// 添加到算子链中
 		getExecutionEnvironment().addOperator(sink.getTransformation());
 		return sink;
 	}

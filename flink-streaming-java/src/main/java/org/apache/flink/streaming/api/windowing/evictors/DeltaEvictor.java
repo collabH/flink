@@ -39,7 +39,9 @@ import java.util.Iterator;
 public class DeltaEvictor<T, W extends Window> implements Evictor<T, W> {
 	private static final long serialVersionUID = 1L;
 
+	// delta函数，新老数据做操作的函数
 	DeltaFunction<T> deltaFunction;
+	// 阈值 在阈值范围内的元素保留
 	private double threshold;
 	private final boolean doEvictAfter;
 
@@ -70,9 +72,11 @@ public class DeltaEvictor<T, W extends Window> implements Evictor<T, W> {
 	}
 
 	private void evict(Iterable<TimestampedValue<T>> elements, int size, EvictorContext ctx) {
+		// 获取最后元素，作为新元素
 		TimestampedValue<T> lastElement = Iterables.getLast(elements);
 		for (Iterator<TimestampedValue<T>> iterator = elements.iterator(); iterator.hasNext();){
 			TimestampedValue<T> element = iterator.next();
+			// 前面的旧元素和新元素放入deltaFunction中计算，大于等于阈值则移除
 			if (deltaFunction.getDelta(element.getValue(), lastElement.getValue()) >= this.threshold) {
 				iterator.remove();
 			}

@@ -30,11 +30,11 @@ public class StreamFlatMap<IN, OUT>
 		implements OneInputStreamOperator<IN, OUT> {
 
 	private static final long serialVersionUID = 1L;
-
 	private transient TimestampedCollector<OUT> collector;
 
 	public StreamFlatMap(FlatMapFunction<IN, OUT> flatMapper) {
 		super(flatMapper);
+		// 算子链策略，尽全力保证任务链优化，任务链运行非shuffle算子能够合并在相同jvm实例的thread，充分避免序列化和反序列化操作
 		chainingStrategy = ChainingStrategy.ALWAYS;
 	}
 
@@ -46,6 +46,7 @@ public class StreamFlatMap<IN, OUT>
 
 	@Override
 	public void processElement(StreamRecord<IN> element) throws Exception {
+		// 是指处理元素的时间，如果不存在设置时间表示不存在
 		collector.setTimestamp(element);
 		userFunction.flatMap(element.getValue(), collector);
 	}

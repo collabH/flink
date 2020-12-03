@@ -37,6 +37,7 @@ import java.util.Iterator;
 public class TimeEvictor<W extends Window> implements Evictor<Object, W> {
 	private static final long serialVersionUID = 1L;
 
+	// 窗口大小
 	private final long windowSize;
 	private final boolean doEvictAfter;
 
@@ -65,13 +66,17 @@ public class TimeEvictor<W extends Window> implements Evictor<Object, W> {
 	}
 
 	private void evict(Iterable<TimestampedValue<Object>> elements, int size, EvictorContext ctx) {
+		// 如果记录没有时间戳直接终止
 		if (!hasTimestamp(elements)) {
 			return;
 		}
 
+		// 获取纪律中最大时间
 		long currentTime = getMaxTimestamp(elements);
+		// 获取可以读取的timestamp
 		long evictCutoff = currentTime - windowSize;
 
+		// 遍历删除大于evictCutoff的记录
 		for (Iterator<TimestampedValue<Object>> iterator = elements.iterator(); iterator.hasNext(); ) {
 			TimestampedValue<Object> record = iterator.next();
 			if (record.getTimestamp() <= evictCutoff) {

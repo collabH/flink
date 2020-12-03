@@ -33,7 +33,7 @@ public class StreamSink<IN> extends AbstractUdfStreamOperator<Object, SinkFuncti
 
 	private static final long serialVersionUID = 1L;
 
-	private transient SimpleContext sinkContext;
+	private transient SimpleContext<IN> sinkContext;
 
 	/** We listen to this ourselves because we don't have an {@link InternalTimerService}. */
 	private long currentWatermark = Long.MIN_VALUE;
@@ -46,12 +46,12 @@ public class StreamSink<IN> extends AbstractUdfStreamOperator<Object, SinkFuncti
 	@Override
 	public void open() throws Exception {
 		super.open();
-
 		this.sinkContext = new SimpleContext<>(getProcessingTimeService());
 	}
 
 	@Override
 	public void processElement(StreamRecord<IN> element) throws Exception {
+		// 处理元素
 		sinkContext.element = element;
 		userFunction.invoke(element.getValue(), sinkContext);
 	}
@@ -66,6 +66,7 @@ public class StreamSink<IN> extends AbstractUdfStreamOperator<Object, SinkFuncti
 
 	@Override
 	public void processWatermark(Watermark mark) throws Exception {
+		// 处理watermark
 		super.processWatermark(mark);
 		this.currentWatermark = mark.getTimestamp();
 	}

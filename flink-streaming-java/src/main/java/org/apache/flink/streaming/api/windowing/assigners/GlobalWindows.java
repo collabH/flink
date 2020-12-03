@@ -48,6 +48,11 @@ public class GlobalWindows extends WindowAssigner<Object, GlobalWindow> {
 		return Collections.singletonList(GlobalWindow.get());
 	}
 
+	/**
+	 * 默认触发器为：直接跳过
+	 * @param env
+	 * @return
+	 */
 	@Override
 	public Trigger<Object, GlobalWindow> getDefaultTrigger(StreamExecutionEnvironment env) {
 		return new NeverTrigger();

@@ -37,6 +37,7 @@ public class DataStreamSink<T> {
 
 	@SuppressWarnings("unchecked")
 	protected DataStreamSink(DataStream<T> inputStream, StreamSink<T> operator) {
+		// 封装成SinkTransformation
 		this.transformation = new SinkTransformation<T>(inputStream.getTransformation(), "Unnamed", operator, inputStream.getExecutionEnvironment().getParallelism());
 	}
 
@@ -127,7 +128,6 @@ public class DataStreamSink<T> {
 	 */
 	private DataStreamSink<T> setResources(ResourceSpec minResources, ResourceSpec preferredResources) {
 		transformation.setResources(minResources, preferredResources);
-
 		return this;
 	}
 

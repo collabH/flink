@@ -105,9 +105,11 @@ public class AllWindowedStream<T, W extends Window> {
 	private Evictor<? super T, ? super W> evictor;
 
 	/** The user-specified allowed lateness. */
+	// 用户指定运行延迟
 	private long allowedLateness = 0L;
 
 	/**
+	 * 迟到数据
 	 * Side output {@code OutputTag} for late data. If no tag is set late data will simply be dropped.
 	 */
 	private OutputTag<T> lateDataOutputTag;
@@ -115,6 +117,7 @@ public class AllWindowedStream<T, W extends Window> {
 	@PublicEvolving
 	public AllWindowedStream(DataStream<T> input,
 			WindowAssigner<? super T, W> windowAssigner) {
+		// 指定null key
 		this.input = input.keyBy(new NullByteKeySelector<T>());
 		this.windowAssigner = windowAssigner;
 		this.trigger = windowAssigner.getDefaultTrigger(input.getExecutionEnvironment());
@@ -134,6 +137,8 @@ public class AllWindowedStream<T, W extends Window> {
 	}
 
 	/**
+	 * 设置允许元素延迟的时间。 到达watermark后超过指定时间的元素将被删除。 默认情况下，允许的延迟为0L 。
+	 * 设置允许的延迟仅对事件时间窗口有效
 	 * Sets the time by which elements are allowed to be late. Elements that
 	 * arrive behind the watermark by more than the specified time will be dropped.
 	 * By default, the allowed lateness is {@code 0L}.
@@ -142,6 +147,7 @@ public class AllWindowedStream<T, W extends Window> {
 	 */
 	@PublicEvolving
 	public AllWindowedStream<T, W> allowedLateness(Time lateness) {
+		// 指定运行延迟的数据
 		final long millis = lateness.toMilliseconds();
 		checkArgument(millis >= 0, "The allowed lateness cannot be negative.");
 
@@ -267,6 +273,7 @@ public class AllWindowedStream<T, W extends Window> {
 		reduceFunction = input.getExecutionEnvironment().clean(reduceFunction);
 
 		String callLocation = Utils.getCallLocationName();
+		// udf名称
 		String udfName = "AllWindowedStream." + callLocation;
 
 		String opName;

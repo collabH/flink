@@ -37,9 +37,11 @@ import org.apache.flink.streaming.api.windowing.windows.Window;
 @PublicEvolving
 public class DeltaTrigger<T, W extends Window> extends Trigger<T, W> {
 	private static final long serialVersionUID = 1L;
-
+	// delta函数
 	private final DeltaFunction<T> deltaFunction;
+	// 阈值
 	private final double threshold;
+	// 状态描述
 	private final ValueStateDescriptor<T> stateDesc;
 
 	private DeltaTrigger(double threshold, DeltaFunction<T> deltaFunction, TypeSerializer<T> stateSerializer) {
@@ -51,11 +53,15 @@ public class DeltaTrigger<T, W extends Window> extends Trigger<T, W> {
 
 	@Override
 	public TriggerResult onElement(T element, long timestamp, W window, TriggerContext ctx) throws Exception {
+		// 获取最后元素状态
 		ValueState<T> lastElementState = ctx.getPartitionedState(stateDesc);
+		// 收拾维护状态
 		if (lastElementState.value() == null) {
+			// 修改状态,并且跳过输出
 			lastElementState.update(element);
 			return TriggerResult.CONTINUE;
 		}
+		// 如果上一次元素和新元素的delta操作大于阈值，则输出并且修改元素
 		if (deltaFunction.getDelta(lastElementState.value(), element) > this.threshold) {
 			lastElementState.update(element);
 			return TriggerResult.FIRE;

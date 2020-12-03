@@ -50,6 +50,7 @@ public class TimestampsAndWatermarksOperator<T>
 
 	private static final long serialVersionUID = 1L;
 
+	// watermark生成策略
 	private final WatermarkStrategy<T> watermarkStrategy;
 
 	/** The timestamp assigner. */
@@ -79,7 +80,7 @@ public class TimestampsAndWatermarksOperator<T>
 		watermarkGenerator = watermarkStrategy.createWatermarkGenerator(this::getMetricGroup);
 
 		wmOutput = new WatermarkEmitter(output, getContainingTask().getStreamStatusMaintainer());
-
+		//watermark生成间隔，从配置中获取
 		watermarkInterval = getExecutionConfig().getAutoWatermarkInterval();
 		if (watermarkInterval > 0) {
 			final long now = getProcessingTimeService().getCurrentProcessingTime();
@@ -87,21 +88,33 @@ public class TimestampsAndWatermarksOperator<T>
 		}
 	}
 
+	/**
+	 * 每来一条记录触发一次
+	 * @param element
+	 * @throws Exception
+	 */
 	@Override
 	public void processElement(final StreamRecord<T> element) throws Exception {
 		final T event = element.getValue();
 		final long previousTimestamp = element.hasTimestamp() ? element.getTimestamp() : Long.MIN_VALUE;
+		// 提出eventTimestamp
 		final long newTimestamp = timestampAssigner.extractTimestamp(event, previousTimestamp);
 
 		element.setTimestamp(newTimestamp);
 		output.collect(element);
+		// 传入watermark生成器中，newTimestamp为timestampAssigner#extractTimestamp出来的时间
 		watermarkGenerator.onEvent(event, newTimestamp, wmOutput);
 	}
 
+	/**
+	 * 生成watermark，processing触发器触发
+	 * @param timestamp The timestamp for which the trigger event was scheduled.
+	 * @throws Exception
+	 */
 	@Override
 	public void onProcessingTime(long timestamp) throws Exception {
 		watermarkGenerator.onPeriodicEmit(wmOutput);
-
+		// 拿到现在的时间，注册下一次watermarker生成的时间
 		final long now = getProcessingTimeService().getCurrentProcessingTime();
 		getProcessingTimeService().registerTimer(now + watermarkInterval, this);
 	}
@@ -122,6 +135,7 @@ public class TimestampsAndWatermarksOperator<T>
 	@Override
 	public void close() throws Exception {
 		super.close();
+		// 关闭之前再生成一次watermark
 		watermarkGenerator.onPeriodicEmit(wmOutput);
 	}
 

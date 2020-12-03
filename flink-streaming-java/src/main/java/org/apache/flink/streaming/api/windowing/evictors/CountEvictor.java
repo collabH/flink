@@ -32,8 +32,9 @@ import java.util.Iterator;
 @PublicEvolving
 public class CountEvictor<W extends Window> implements Evictor<Object, W> {
 	private static final long serialVersionUID = 1L;
-
+	// 最大的读取count
 	private final long maxCount;
+	// 是否之后处理
 	private final boolean doEvictAfter;
 
 	private CountEvictor(long count, boolean doEvictAfter) {
@@ -60,7 +61,14 @@ public class CountEvictor<W extends Window> implements Evictor<Object, W> {
 		}
 	}
 
+	/**
+	 * 处理钱n条元素
+	 * @param elements
+	 * @param size
+	 * @param ctx
+	 */
 	private void evict(Iterable<TimestampedValue<Object>> elements, int size, EvictorContext ctx) {
+		// 如果如果count大于等于size，直接可以在窗口内处理，否则去要处理elements迭代器
 		if (size <= maxCount) {
 			return;
 		} else {

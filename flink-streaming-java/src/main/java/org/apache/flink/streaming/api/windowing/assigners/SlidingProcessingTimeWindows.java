@@ -44,11 +44,12 @@ import java.util.List;
  */
 public class SlidingProcessingTimeWindows extends WindowAssigner<Object, TimeWindow> {
 	private static final long serialVersionUID = 1L;
-
+	// 窗口大小
 	private final long size;
 
+	// offset
 	private final long offset;
-
+	// 滑动距离
 	private final long slide;
 
 	private SlidingProcessingTimeWindows(long size, long slide, long offset) {
@@ -65,11 +66,14 @@ public class SlidingProcessingTimeWindows extends WindowAssigner<Object, TimeWin
 	@Override
 	public Collection<TimeWindow> assignWindows(Object element, long timestamp, WindowAssignerContext context) {
 		timestamp = context.getCurrentProcessingTime();
+		// 计算最后的start
 		List<TimeWindow> windows = new ArrayList<>((int) (size / slide));
 		long lastStart = TimeWindow.getWindowStartWithOffset(timestamp, offset, slide);
+		// 从start开始，在size范围内，每次滑动slide
 		for (long start = lastStart;
 			start > timestamp - size;
 			start -= slide) {
+			// 计算的窗口放入list
 			windows.add(new TimeWindow(start, start + size));
 		}
 		return windows;
@@ -85,6 +89,7 @@ public class SlidingProcessingTimeWindows extends WindowAssigner<Object, TimeWin
 
 	@Override
 	public Trigger<Object, TimeWindow> getDefaultTrigger(StreamExecutionEnvironment env) {
+		// 只会到窗口时间触发计算，累加的方式
 		return ProcessingTimeTrigger.create();
 	}
 
@@ -106,6 +111,7 @@ public class SlidingProcessingTimeWindows extends WindowAssigner<Object, TimeWin
 	}
 
 	/**
+	 * 用于控制数据丢失时区问题
 	 * Creates a new {@code SlidingProcessingTimeWindows} {@link WindowAssigner} that assigns
 	 * elements to time windows based on the element timestamp and offset.
 	 *

@@ -38,6 +38,7 @@ public class IterativeStream<T> extends SingleOutputStreamOperator<T> {
 
 	// We store these so that we can create a co-iteration if we need to
 	private DataStream<T> originalInput;
+	// 最大等待时间
 	private long maxWaitTime;
 
 	protected IterativeStream(DataStream<T> dataStream, long maxWaitTime) {
@@ -45,6 +46,7 @@ public class IterativeStream<T> extends SingleOutputStreamOperator<T> {
 				new FeedbackTransformation<>(dataStream.getTransformation(), maxWaitTime));
 		this.originalInput = dataStream;
 		this.maxWaitTime = maxWaitTime;
+		// 设置数据流缓存时间
 		setBufferTimeout(dataStream.environment.getBufferTimeout());
 	}
 

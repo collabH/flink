@@ -33,6 +33,7 @@ public class ProcessingTimeTrigger extends Trigger<Object, TimeWindow> {
 
 	@Override
 	public TriggerResult onElement(Object element, long timestamp, TimeWindow window, TriggerContext ctx) {
+		// 注册定时器
 		ctx.registerProcessingTimeTimer(window.maxTimestamp());
 		return TriggerResult.CONTINUE;
 	}
@@ -42,6 +43,13 @@ public class ProcessingTimeTrigger extends Trigger<Object, TimeWindow> {
 		return TriggerResult.CONTINUE;
 	}
 
+	/**
+	 * timer触发是调用
+	 * @param time The timestamp at which the timer fired.
+	 * @param window The window for which the timer fired.
+	 * @param ctx A context object that can be used to register timer callbacks.
+	 * @return
+	 */
 	@Override
 	public TriggerResult onProcessingTime(long time, TimeWindow window, TriggerContext ctx) {
 		return TriggerResult.FIRE;

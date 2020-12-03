@@ -35,10 +35,12 @@ public class EventTimeTrigger extends Trigger<Object, TimeWindow> {
 
 	@Override
 	public TriggerResult onElement(Object element, long timestamp, TimeWindow window, TriggerContext ctx) throws Exception {
+		// 如果窗口的最大时间，小于等于当前watermarker，则将窗口数据发出，但是不会清空数据
 		if (window.maxTimestamp() <= ctx.getCurrentWatermark()) {
 			// if the watermark is already past the window fire immediately
 			return TriggerResult.FIRE;
 		} else {
+			// 如果时间超过watermark，则注册计时器，并且统计数据
 			ctx.registerEventTimeTimer(window.maxTimestamp());
 			return TriggerResult.CONTINUE;
 		}
@@ -46,6 +48,7 @@ public class EventTimeTrigger extends Trigger<Object, TimeWindow> {
 
 	@Override
 	public TriggerResult onEventTime(long time, TimeWindow window, TriggerContext ctx) {
+		// 如果记录时间于窗口最大时间相同没，则输出
 		return time == window.maxTimestamp() ?
 			TriggerResult.FIRE :
 			TriggerResult.CONTINUE;
@@ -58,6 +61,7 @@ public class EventTimeTrigger extends Trigger<Object, TimeWindow> {
 
 	@Override
 	public void clear(TimeWindow window, TriggerContext ctx) throws Exception {
+		// 清空计时器
 		ctx.deleteEventTimeTimer(window.maxTimestamp());
 	}
 

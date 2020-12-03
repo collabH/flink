@@ -39,9 +39,11 @@ import org.apache.flink.streaming.api.windowing.windows.Window;
 public class ContinuousEventTimeTrigger<W extends Window> extends Trigger<Object, W> {
 	private static final long serialVersionUID = 1L;
 
+	// Trigger触发的间隔
 	private final long interval;
 
 	/** When merging we take the lowest of all fire timestamps as the new fire timestamp. */
+	// 计算最小的时间
 	private final ReducingStateDescriptor<Long> stateDesc =
 			new ReducingStateDescriptor<>("fire-time", new Min(), LongSerializer.INSTANCE);
 
@@ -51,19 +53,23 @@ public class ContinuousEventTimeTrigger<W extends Window> extends Trigger<Object
 
 	@Override
 	public TriggerResult onElement(Object element, long timestamp, W window, TriggerContext ctx) throws Exception {
-
+		// 如果watermark大于等于窗口结束时间，则输出当前窗口记录
 		if (window.maxTimestamp() <= ctx.getCurrentWatermark()) {
 			// if the watermark is already past the window fire immediately
 			return TriggerResult.FIRE;
 		} else {
+			// 注册event定时器
 			ctx.registerEventTimeTimer(window.maxTimestamp());
 		}
-
+		// 获取输出记录时间
 		ReducingState<Long> fireTimestamp = ctx.getPartitionedState(stateDesc);
 		if (fireTimestamp.get() == null) {
+			// 计算开始时间
 			long start = timestamp - (timestamp % interval);
 			long nextFireTimestamp = start + interval;
+			// 注册计时器
 			ctx.registerEventTimeTimer(nextFireTimestamp);
+			//放入ReducingState
 			fireTimestamp.add(nextFireTimestamp);
 		}
 
