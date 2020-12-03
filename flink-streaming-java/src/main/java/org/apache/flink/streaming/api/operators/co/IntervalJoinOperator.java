@@ -157,10 +157,16 @@ public class IntervalJoinOperator<K, T1, T2, OUT>
 			getInternalTimerService(CLEANUP_TIMER_NAME, StringSerializer.INSTANCE, this);
 	}
 
+	/**
+	 * 初始化state
+	 * @param context
+	 * @throws Exception
+	 */
 	@Override
 	public void initializeState(StateInitializationContext context) throws Exception {
 		super.initializeState(context);
 
+		// 获取状态
 		this.leftBuffer = context.getKeyedStateStore().getMapState(new MapStateDescriptor<>(
 			LEFT_BUFFER,
 			LongSerializer.INSTANCE,

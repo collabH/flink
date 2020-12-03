@@ -58,8 +58,9 @@ public class LegacyKeyedProcessOperator<K, IN, OUT>
 	@Override
 	public void open() throws Exception {
 		super.open();
+		//创建时间戳收集器
 		collector = new TimestampedCollector<>(output);
-
+		//创建内部时间服务描述
 		InternalTimerService<VoidNamespace> internalTimerService =
 				getInternalTimerService("user-timers", VoidNamespaceSerializer.INSTANCE, this);
 
@@ -72,19 +73,24 @@ public class LegacyKeyedProcessOperator<K, IN, OUT>
 	@Override
 	public void onEventTime(InternalTimer<K, VoidNamespace> timer) throws Exception {
 		collector.setAbsoluteTimestamp(timer.getTimestamp());
+		// 触发processFunction
 		invokeUserFunction(TimeDomain.EVENT_TIME, timer);
 	}
 
 	@Override
 	public void onProcessingTime(InternalTimer<K, VoidNamespace> timer) throws Exception {
 		collector.eraseTimestamp();
+		// 触发processFunction
 		invokeUserFunction(TimeDomain.PROCESSING_TIME, timer);
 	}
 
 	@Override
 	public void processElement(StreamRecord<IN> element) throws Exception {
+		// 设置处理数据的时间
 		collector.setTimestamp(element);
+		// 数据传递给context
 		context.element = element;
+		// 执行processFunction#processElement
 		userFunction.processElement(element.getValue(), context, collector);
 		context.element = null;
 	}

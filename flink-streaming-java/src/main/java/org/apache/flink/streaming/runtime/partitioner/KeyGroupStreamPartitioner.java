@@ -37,6 +37,11 @@ public class KeyGroupStreamPartitioner<T, K> extends StreamPartitioner<T> implem
 
 	private int maxParallelism;
 
+	/**
+	 *
+	 * @param keySelector
+	 * @param maxParallelism 默认2的7次方
+	 */
 	public KeyGroupStreamPartitioner(KeySelector<T, K> keySelector, int maxParallelism) {
 		Preconditions.checkArgument(maxParallelism > 0, "Number of key-groups must be > 0!");
 		this.keySelector = Preconditions.checkNotNull(keySelector);
@@ -47,6 +52,11 @@ public class KeyGroupStreamPartitioner<T, K> extends StreamPartitioner<T> implem
 		return maxParallelism;
 	}
 
+	/**
+	 * 选择输出的下游分区中
+	 * @param record the record to determine the output channels for.
+	 * @return
+	 */
 	@Override
 	public int selectChannel(SerializationDelegate<StreamRecord<T>> record) {
 		K key;

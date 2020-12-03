@@ -42,6 +42,7 @@ public class PartitionTransformation<T> extends Transformation<T> {
 
 	private final Transformation<T> input;
 
+	// 分区器
 	private final StreamPartitioner<T> partitioner;
 
 	private final ShuffleMode shuffleMode;

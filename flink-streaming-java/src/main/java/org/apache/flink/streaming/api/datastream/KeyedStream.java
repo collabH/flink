@@ -99,10 +99,12 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 
 	/**
 	 * The key selector that can get the key by which the stream if partitioned from the elements.
+	 * key选择器，获取分区元素
 	 */
 	private final KeySelector<T, KEY> keySelector;
 
 	/** The type of the key by which the stream is partitioned. */
+	// key类型
 	private final TypeInformation<KEY> keyType;
 
 	/**
@@ -189,7 +191,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 				}
 			}
 		}
-
+		// 不为null则抛出异常
 		if (!unsupportedTypes.isEmpty()) {
 			throw new InvalidProgramException("Type " + keyType + " cannot be used as key. Contained " +
 					"UNSUPPORTED key types: " + StringUtils.join(unsupportedTypes, ", ") + ". Look " +
@@ -218,6 +220,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 	private boolean validateKeyTypeIsHashable(TypeInformation<?> type) {
 		try {
 			return (type instanceof PojoTypeInfo)
+				// pojo要重写hashCode方法
 					? !type.getTypeClass().getMethod("hashCode").getDeclaringClass().equals(Object.class)
 					: !(isArrayType(type) || isEnumType(type));
 		} catch (NoSuchMethodException ignored) {
@@ -275,6 +278,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 
 		// inject the key selector and key type
 		OneInputTransformation<T, R> transform = (OneInputTransformation<T, R>) returnStream.getTransformation();
+		// 设置分区器和分区key类型
 		transform.setStateKeySelector(keySelector);
 		transform.setStateKeyType(keyType);
 
@@ -350,7 +354,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 			TypeInformation<R> outputType) {
 
 		LegacyKeyedProcessOperator<KEY, T, R> operator = new LegacyKeyedProcessOperator<>(clean(processFunction));
-
+		// 将创建的算子传入transform，最终加入transforms dag图中
 		return transform("Process", outputType, operator);
 	}
 
@@ -460,7 +464,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 
 			TimeCharacteristic timeCharacteristic =
 				streamOne.getExecutionEnvironment().getStreamTimeCharacteristic();
-
+			// 边界流不支持eventTime时间语义
 			if (timeCharacteristic != TimeCharacteristic.EventTime) {
 				throw new UnsupportedTimeCharacteristicException("Time-bounded stream joins are only supported in event time");
 			}
@@ -584,9 +588,9 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 				TypeInformation<OUT> outputType) {
 			Preconditions.checkNotNull(processJoinFunction);
 			Preconditions.checkNotNull(outputType);
-
+			// 清理process函数
 			final ProcessJoinFunction<IN1, IN2, OUT> cleanedUdf = left.getExecutionEnvironment().clean(processJoinFunction);
-
+			// 创建IntervalJoinOperator
 			final IntervalJoinOperator<KEY, IN1, IN2, OUT> operator =
 				new IntervalJoinOperator<>(
 					lowerBound,
@@ -597,7 +601,6 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 					right.getType().createSerializer(right.getExecutionConfig()),
 					cleanedUdf
 				);
-
 			return left
 				.connect(right)
 				.keyBy(keySelector1, keySelector2)
