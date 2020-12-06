@@ -96,6 +96,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * @param <OUT> The type of elements emitted by the {@code InternalWindowFunction}.
  * @param <W> The type of {@code Window} that the {@code WindowAssigner} assigns.
  */
+// 单输入UDF
 @Internal
 public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 	extends AbstractUdfStreamOperator<OUT, InternalWindowFunction<ACC, OUT, K, W>>
@@ -139,7 +140,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 	protected final OutputTag<IN> lateDataOutputTag;
 
 	private static final  String LATE_ELEMENTS_DROPPED_METRIC_NAME = "numLateRecordsDropped";
-
+	// 迟到数据删除的数量计数器
 	protected transient Counter numLateRecordsDropped;
 
 	// ------------------------------------------------------------------------
@@ -147,6 +148,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 	// ------------------------------------------------------------------------
 
 	/** The state in which the window contents is stored. Each window is a namespace */
+	// 内部自增窗口状态
 	private transient InternalAppendingState<K, W, IN, ACC, ACC> windowState;
 
 	/**
@@ -218,9 +220,12 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 	public void open() throws Exception {
 		super.open();
 
+		// 生成计数器指标
 		this.numLateRecordsDropped = metrics.counter(LATE_ELEMENTS_DROPPED_METRIC_NAME);
+		// 时间戳收集器
 		timestampedCollector = new TimestampedCollector<>(output);
 
+		// 创建timerService
 		internalTimerService =
 				getInternalTimerService("window-timers", windowSerializer, this);
 
@@ -292,6 +297,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 
 	@Override
 	public void processElement(StreamRecord<IN> element) throws Exception {
+		// 获取元素窗口集合
 		final Collection<W> elementWindows = windowAssigner.assignWindows(
 			element.getValue(), element.getTimestamp(), windowAssignerContext);
 
@@ -299,27 +305,38 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 		boolean isSkippedElement = true;
 
 		final K key = this.<K>getKeyedStateBackend().getCurrentKey();
-
+		// 如果为合并窗口
 		if (windowAssigner instanceof MergingWindowAssigner) {
+			// 获取
 			MergingWindowSet<W> mergingWindows = getMergingWindowSet();
-
+			// 遍历窗口
 			for (W window: elementWindows) {
 
 				// adding the new window might result in a merge, in that case the actualWindow
 				// is the merged window and we work with that. If we don't merge then
 				// actualWindow == window
+				// 添加窗口
 				W actualWindow = mergingWindows.addWindow(window, new MergingWindowSet.MergeFunction<W>() {
+					/**
+					 * merge函数
+					 * @param mergeResult The newly resulting merged {@code Window}.
+					 * @param mergedWindows The merged {@code Window Windows}.
+					 * @param stateWindowResult The state window of the merge result.
+					 * @param mergedStateWindows The merged state windows.
+					 * @throws Exception
+					 */
 					@Override
 					public void merge(W mergeResult,
 							Collection<W> mergedWindows, W stateWindowResult,
 							Collection<W> mergedStateWindows) throws Exception {
-
+						// 如果是事件时间，获取最大时间+延迟时间如果小于等于watermark则抛出一次，窗口的最新时间不能低于当前watermark在合并的时候
 						if ((windowAssigner.isEventTime() && mergeResult.maxTimestamp() + allowedLateness <= internalTimerService.currentWatermark())) {
 							throw new UnsupportedOperationException("The end timestamp of an " +
 									"event-time window cannot become earlier than the current watermark " +
 									"by merging. Current watermark: " + internalTimerService.currentWatermark() +
 									" window: " + mergeResult);
 						} else if (!windowAssigner.isEventTime()) {
+							// 时间时间，判断最大窗口是否能超过watermark
 							long currentProcessingTime = internalTimerService.currentProcessingTime();
 							if (mergeResult.maxTimestamp() <= currentProcessingTime) {
 								throw new UnsupportedOperationException("The end timestamp of a " +
@@ -337,6 +354,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 						for (W m: mergedWindows) {
 							triggerContext.window = m;
 							triggerContext.clear();
+							// 合并窗口，删除需要输出和清空的窗口
 							deleteCleanupTimer(m);
 						}
 
@@ -346,7 +364,8 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 				});
 
 				// drop if the window is already late
-				if (isWindowLate(actualWindow)) {
+				// 移除合并窗口
+				if ( isWindowLate(actualWindow)) {
 					mergingWindows.retireWindow(actualWindow);
 					continue;
 				}
@@ -363,19 +382,25 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 				triggerContext.key = key;
 				triggerContext.window = actualWindow;
 
+				// 处理元素
 				TriggerResult triggerResult = triggerContext.onElement(element);
 
+				// 如果结果为输出
 				if (triggerResult.isFire()) {
+					// 获取最窗口内容
 					ACC contents = windowState.get();
 					if (contents == null) {
 						continue;
 					}
+					// 输出窗口，数据放入udf，收集时间戳
 					emitWindowContents(actualWindow, contents);
 				}
 
+				// 清空窗口
 				if (triggerResult.isPurge()) {
 					windowState.clear();
 				}
+				// 注册清空时间器，用于清空窗口内容
 				registerCleanupTimer(actualWindow);
 			}
 
@@ -409,6 +434,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 				if (triggerResult.isPurge()) {
 					windowState.clear();
 				}
+				// 输出并清空
 				registerCleanupTimer(window);
 			}
 		}
@@ -426,6 +452,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 		}
 	}
 
+	// 注册触发的定时器
 	@Override
 	public void onEventTime(InternalTimer<K, W> timer) throws Exception {
 		triggerContext.key = timer.getKey();
@@ -529,7 +556,9 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 			W window,
 			AppendingState<IN, ACC> windowState,
 			MergingWindowSet<W> mergingWindows) throws Exception {
+		// 清空窗口状态
 		windowState.clear();
+		// 清空触发器
 		triggerContext.clear();
 		processContext.window = window;
 		processContext.clear();
@@ -546,12 +575,13 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 	private void emitWindowContents(W window, ACC contents) throws Exception {
 		timestampedCollector.setAbsoluteTimestamp(window.maxTimestamp());
 		processContext.window = window;
+		// 数据放入window udf
 		userFunction.process(triggerContext.key, window, processContext, contents, timestampedCollector);
 	}
 
 	/**
 	 * Write skipped late arriving element to SideOutput.
-	 *
+	 * 迟到数据写入
 	 * @param element skipped late arriving element to side output
 	 */
 	protected void sideOutput(StreamRecord<IN> element){
@@ -572,10 +602,12 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 	}
 
 	/**
+	 * 判断当前窗口是否
 	 * Returns {@code true} if the watermark is after the end timestamp plus the allowed lateness
 	 * of the given window.
 	 */
 	protected boolean isWindowLate(W window) {
+		// 如果为事件时间并且windowMaxTime+allowedLateness小于当前watermark代表迟到数据
 		return (windowAssigner.isEventTime() && (cleanupTime(window) <= internalTimerService.currentWatermark()));
 	}
 
@@ -638,6 +670,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 	 */
 	private long cleanupTime(W window) {
 		if (windowAssigner.isEventTime()) {
+			// 窗口最大时间加上允许延迟的时间
 			long cleanupTime = window.maxTimestamp() + allowedLateness;
 			return cleanupTime >= window.maxTimestamp() ? cleanupTime : Long.MAX_VALUE;
 		} else {
@@ -911,6 +944,10 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 			trigger.onMerge(window, this);
 		}
 
+		/**
+		 * 清空触发器
+		 * @throws Exception
+		 */
 		public void clear() throws Exception {
 			trigger.clear(window, this);
 		}

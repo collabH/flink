@@ -45,11 +45,12 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 public class InternalTimerServiceImpl<K, N> implements InternalTimerService<N> {
 
 	private final ProcessingTimeService processingTimeService;
-
+	// keyed stream key
 	private final KeyContext keyContext;
 
 	/**
 	 * Processing time timers that are currently in-flight.
+	 * 当前正在运行的processing timer
 	 */
 	private final KeyGroupedInternalPriorityQueue<TimerHeapInternalTimer<K, N>> processingTimeTimersQueue;
 

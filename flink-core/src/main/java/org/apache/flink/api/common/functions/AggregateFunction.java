@@ -116,7 +116,7 @@ public interface AggregateFunction<IN, ACC, OUT> extends Function, Serializable 
 
 	/**
 	 * Creates a new accumulator, starting a new aggregate.
-	 *
+	 * 创建新的计数器，开始一个新的聚合
 	 * <p>The new accumulator is typically meaningless unless a value is added
 	 * via {@link #add(Object, Object)}.
 	 *
@@ -129,6 +129,7 @@ public interface AggregateFunction<IN, ACC, OUT> extends Function, Serializable 
 	ACC createAccumulator();
 
 	/**
+	 * 添加给定输入到给定计数器，返回新的计数器值
 	 * Adds the given input value to the given accumulator, returning the
 	 * new accumulator value.
 	 *
@@ -142,6 +143,7 @@ public interface AggregateFunction<IN, ACC, OUT> extends Function, Serializable 
 	ACC add(IN value, ACC accumulator);
 
 	/**
+	 * 得到计算器结果
 	 * Gets the result of the aggregation from the accumulator.
 	 *
 	 * @param accumulator The accumulator of the aggregation
@@ -150,6 +152,7 @@ public interface AggregateFunction<IN, ACC, OUT> extends Function, Serializable 
 	OUT getResult(ACC accumulator);
 
 	/**
+	 * 合并两个计数器
 	 * Merges two accumulators, returning an accumulator with the merged state.
 	 *
 	 * <p>This function may reuse any of the given accumulators as the target for the merge

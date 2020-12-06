@@ -26,9 +26,10 @@ import org.apache.flink.annotation.PublicEvolving;
 @PublicEvolving
 public interface TimerService {
 
+	// 设置timer只支持keyed stream
 	/** Error string for {@link UnsupportedOperationException} on registering timers. */
 	String UNSUPPORTED_REGISTER_TIMER_MSG = "Setting timers is only supported on a keyed streams.";
-
+	// 删除timer只支持keyed stream
 	/** Error string for {@link UnsupportedOperationException} on deleting timers. */
 	String UNSUPPORTED_DELETE_TIMER_MSG = "Deleting timers is only supported on a keyed streams.";
 

@@ -271,20 +271,23 @@ public class WindowedStream<T, K, W extends Window> {
 		//clean the closures
 		function = input.getExecutionEnvironment().clean(function);
 		reduceFunction = input.getExecutionEnvironment().clean(reduceFunction);
-
+		// 生成算子名称
 		final String opName = generateOperatorName(windowAssigner, trigger, evictor, reduceFunction, function);
 		KeySelector<T, K> keySel = input.getKeySelector();
 
 		OneInputStreamOperator<T, R> operator;
-
+		// 判断是否指定evictor创建不同的窗口算子
 		if (evictor != null) {
 			@SuppressWarnings({"unchecked", "rawtypes"})
+				// 获取streamRecord序列化器
 			TypeSerializer<StreamRecord<T>> streamRecordSerializer =
 				(TypeSerializer<StreamRecord<T>>) new StreamElementSerializer(input.getType().createSerializer(getExecutionEnvironment().getConfig()));
 
+			// 创建ListState，用于存储窗口内容
 			ListStateDescriptor<StreamRecord<T>> stateDesc =
 				new ListStateDescriptor<>("window-contents", streamRecordSerializer);
 
+			// 创建EvictingWindowOperator
 			operator =
 				new EvictingWindowOperator<>(windowAssigner,
 					windowAssigner.getWindowSerializer(getExecutionEnvironment().getConfig()),
@@ -298,6 +301,7 @@ public class WindowedStream<T, K, W extends Window> {
 					lateDataOutputTag);
 
 		} else {
+			// 创建Reducing状态，将reduce函数传入
 			ReducingStateDescriptor<T> stateDesc = new ReducingStateDescriptor<>("window-contents",
 				reduceFunction,
 				input.getType().createSerializer(getExecutionEnvironment().getConfig()));
@@ -314,6 +318,7 @@ public class WindowedStream<T, K, W extends Window> {
 					lateDataOutputTag);
 		}
 
+		// 算子加入算子链条
 		return input.transform(opName, resultType, operator);
 	}
 
@@ -687,14 +692,15 @@ public class WindowedStream<T, K, W extends Window> {
 	@PublicEvolving
 	public <ACC, R> SingleOutputStreamOperator<R> aggregate(AggregateFunction<T, ACC, R> function) {
 		checkNotNull(function, "function");
-
+		// agg不支持RichFunction
 		if (function instanceof RichFunction) {
 			throw new UnsupportedOperationException("This aggregation function cannot be a RichFunction.");
 		}
-
+		// 获取acc类型
 		TypeInformation<ACC> accumulatorType = TypeExtractor.getAggregateFunctionAccumulatorType(
 				function, input.getType(), null, false);
 
+		// 获取结果类型
 		TypeInformation<R> resultType = TypeExtractor.getAggregateFunctionReturnType(
 				function, input.getType(), null, false);
 
@@ -727,6 +733,7 @@ public class WindowedStream<T, K, W extends Window> {
 			throw new UnsupportedOperationException("This aggregation function cannot be a RichFunction.");
 		}
 
+		// 传递默认窗口函数，只负责将窗口的数据输出
 		return aggregate(function, new PassThroughWindowFunction<K, W, R>(),
 			accumulatorType, resultType);
 	}
@@ -1081,6 +1088,7 @@ public class WindowedStream<T, K, W extends Window> {
 
 		WindowOperator<K, T, Iterable<T>, R, W> operator;
 
+		// 传入listState用了存储window内容
 		if (evictor != null) {
 			@SuppressWarnings({"unchecked", "rawtypes"})
 			TypeSerializer<StreamRecord<T>> streamRecordSerializer =

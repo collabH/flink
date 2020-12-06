@@ -37,18 +37,20 @@ import org.apache.flink.annotation.Internal;
 public interface TimerService extends ProcessingTimeService {
 
 	/**
+	 * timerService是否终止状态
 	 * Returns <tt>true</tt> if the service has been shut down, <tt>false</tt> otherwise.
 	 */
 	boolean isTerminated();
 
 	/**
+	 * 关闭TimerService
 	 * Shuts down and clean up the timer service provider hard and immediately. This does not wait
 	 * for any timer to complete. Any further call to {@link #registerTimer(long, ProcessingTimeCallback)}
 	 * will result in a hard exception.
 	 */
 	void shutdownService();
 
-	/**
+	/**优雅关闭
 	 * Shuts down and clean up the timer service provider hard and immediately. This does not wait
 	 * for any timer to complete. Any further call to {@link #registerTimer(long, ProcessingTimeCallback)}
 	 * will result in a hard exception. This call cannot be interrupted and will block until the shutdown is completed

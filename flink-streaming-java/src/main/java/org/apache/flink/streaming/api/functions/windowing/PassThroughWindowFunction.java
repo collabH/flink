@@ -23,6 +23,7 @@ import org.apache.flink.streaming.api.windowing.windows.Window;
 import org.apache.flink.util.Collector;
 
 /**
+ * 仅仅输出每个元素
  * A {@link WindowFunction} that just emits each input element.
  */
 @Internal

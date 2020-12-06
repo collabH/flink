@@ -45,7 +45,9 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 public class SystemProcessingTimeService implements TimerService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(SystemProcessingTimeService.class);
-
+	/**
+	 * 定义TimeService状态
+	 */
 	private static final int STATUS_ALIVE = 0;
 	private static final int STATUS_QUIESCED = 1;
 	private static final int STATUS_SHUTDOWN = 2;
@@ -53,11 +55,13 @@ public class SystemProcessingTimeService implements TimerService {
 	// ------------------------------------------------------------------------
 
 	/** The executor service that schedules and calls the triggers of this task. */
+	// 调度线程池，线程数为1
 	private final ScheduledThreadPoolExecutor timerService;
-
+	// 异常处理器
 	private final ExceptionHandler exceptionHandler;
+	// timeService状态
 	private final AtomicInteger status;
-
+	// 未完成的定时器
 	private final CompletableFuture<Void> quiesceCompletedFuture;
 
 	@VisibleForTesting
@@ -68,6 +72,7 @@ public class SystemProcessingTimeService implements TimerService {
 	SystemProcessingTimeService(ExceptionHandler exceptionHandler, ThreadFactory threadFactory) {
 
 		this.exceptionHandler = checkNotNull(exceptionHandler);
+		// 默认状态 alive
 		this.status = new AtomicInteger(STATUS_ALIVE);
 		this.quiesceCompletedFuture = new CompletableFuture<>();
 
@@ -77,16 +82,19 @@ public class SystemProcessingTimeService implements TimerService {
 			this.timerService = new ScheduledTaskExecutor(1, threadFactory);
 		}
 
-		// tasks should be removed if the future is canceled
+		// tasks should be removed if the future is canceled，如果futrue被取消，task应该被移除
 		this.timerService.setRemoveOnCancelPolicy(true);
 
-		// make sure shutdown removes all pending tasks
+		// make sure shutdown removes all pending tasks 确保关机删除所有未完成的任务
+		// timeService关闭后，任务被终止和移除，相当于shutdownNow
 		this.timerService.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
+		// 设置为true，标示关闭后执行，false标示不执行
 		this.timerService.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
 	}
 
 	@Override
 	public long getCurrentProcessingTime() {
+		// 系统时间
 		return System.currentTimeMillis();
 	}
 
@@ -102,15 +110,18 @@ public class SystemProcessingTimeService implements TimerService {
 	@Override
 	public ScheduledFuture<?> registerTimer(long timestamp, ProcessingTimeCallback callback) {
 
+		// 计算timestamp和getCurrentProcessingTime的延迟，在timestamp和当前时间的差值上再延迟1ms，为了watermark的判断，防止出现边界清空，小于watermakr的数据都会被丢弃
 		long delay = ProcessingTimeServiceUtil.getProcessingTimeDelay(timestamp, getCurrentProcessingTime());
 
 		// we directly try to register the timer and only react to the status on exception
 		// that way we save unnecessary volatile accesses for each timer
 		try {
+			// 在delay ms后执行wrapOnTimerCallback
 			return timerService.schedule(wrapOnTimerCallback(callback, timestamp), delay, TimeUnit.MILLISECONDS);
 		}
 		catch (RejectedExecutionException e) {
 			final int status = this.status.get();
+			// 停止状态，没有timer
 			if (status == STATUS_QUIESCED) {
 				return new NeverCompleteFuture(delay);
 			}
@@ -135,7 +146,9 @@ public class SystemProcessingTimeService implements TimerService {
 	}
 
 	private ScheduledFuture<?> scheduleRepeatedly(ProcessingTimeCallback callback, long initialDelay, long period, boolean fixedDelay) {
+		// 下次执行的时间
 		final long nextTimestamp = getCurrentProcessingTime() + initialDelay;
+		// 获取调度任务
 		final Runnable task = wrapOnTimerCallback(callback, nextTimestamp, period);
 
 		// we directly try to register the timer and only react to the status on exception
@@ -218,6 +231,7 @@ public class SystemProcessingTimeService implements TimerService {
 				// wait for a reasonable time for all pending timer threads to finish
 				shutdownComplete = shutdownAndAwaitPending(deadline.timeLeft().toMillis(), TimeUnit.MILLISECONDS);
 			} catch (InterruptedException iex) {
+				// 强制终端
 				receivedInterrupt = true;
 				LOG.trace("Intercepted attempt to interrupt timer service shutdown.", iex);
 			}
@@ -231,6 +245,7 @@ public class SystemProcessingTimeService implements TimerService {
 	}
 
 	// safety net to destroy the thread pool
+	// 垃圾回收的时候触发，强制关闭timerService
 	@Override
 	protected void finalize() throws Throwable {
 		super.finalize();
@@ -239,6 +254,7 @@ public class SystemProcessingTimeService implements TimerService {
 
 	@VisibleForTesting
 	int getNumTasksScheduled() {
+		// 获取调度任务个数
 		BlockingQueue<?> queue = timerService.getQueue();
 		if (queue == null) {
 			return 0;
@@ -273,6 +289,12 @@ public class SystemProcessingTimeService implements TimerService {
 		void handleException(Exception ex);
 	}
 
+	/**
+	 * 将ProcessingTimeCallback包装成Runnable
+	 * @param callback
+	 * @param timestamp
+	 * @return
+	 */
 	private Runnable wrapOnTimerCallback(ProcessingTimeCallback callback, long timestamp) {
 		return new ScheduledTask(status, exceptionHandler, callback, timestamp, 0);
 	}
@@ -281,12 +303,19 @@ public class SystemProcessingTimeService implements TimerService {
 		return new ScheduledTask(status, exceptionHandler, callback, nextTimestamp, period);
 	}
 
+	/**
+	 * Timer调度Task
+	 */
 	private static final class ScheduledTask implements Runnable {
+		// 服务状态
 		private final AtomicInteger serviceStatus;
+		// 异常处理器
 		private final ExceptionHandler exceptionHandler;
+		// Processing回调函数
 		private final ProcessingTimeCallback callback;
-
+		// 下次触发的时间
 		private long nextTimestamp;
+		// 间隔的周期
 		private final long period;
 
 		ScheduledTask(
@@ -304,14 +333,17 @@ public class SystemProcessingTimeService implements TimerService {
 
 		@Override
 		public void run() {
+			// 判断服务状态
 			if (serviceStatus.get() != STATUS_ALIVE) {
 				return;
 			}
 			try {
+				// 触发onProcessingTime
 				callback.onProcessingTime(nextTimestamp);
 			} catch (Exception ex) {
 				exceptionHandler.handleException(ex);
 			}
+			// 周期调用，每隔period执行一次
 			nextTimestamp += period;
 		}
 	}

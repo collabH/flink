@@ -623,6 +623,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 	 * @param size The size of the window.
 	 */
 	public WindowedStream<T, KEY, TimeWindow> timeWindow(Time size) {
+		// 根据不同的时间语义生成不同的WindowAssigner
 		if (environment.getStreamTimeCharacteristic() == TimeCharacteristic.ProcessingTime) {
 			return window(TumblingProcessingTimeWindows.of(size));
 		} else {
@@ -654,6 +655,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 	 * @param size The size of the windows in number of elements.
 	 */
 	public WindowedStream<T, KEY, GlobalWindow> countWindow(long size) {
+		// 指定全局窗口，数据满size时触发窗口，并且每触发后清空窗口记录
 		return window(GlobalWindows.create()).trigger(PurgingTrigger.of(CountTrigger.of(size)));
 	}
 
@@ -664,6 +666,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 	 * @param slide The slide interval in number of elements.
 	 */
 	public WindowedStream<T, KEY, GlobalWindow> countWindow(long size, long slide) {
+		// 全局窗口，取前size中取slide数据
 		return window(GlobalWindows.create())
 				.evictor(CountEvictor.of(size))
 				.trigger(CountTrigger.of(slide));

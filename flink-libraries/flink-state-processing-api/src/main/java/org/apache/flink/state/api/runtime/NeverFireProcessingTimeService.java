@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A processing time service whose timers never fire so all timers are included in savepoints.
+ * 处理时间服务，其计时器永不触发，因此所有计时器都包含在savepoint中
  */
 @Internal
 public final class NeverFireProcessingTimeService implements TimerService {

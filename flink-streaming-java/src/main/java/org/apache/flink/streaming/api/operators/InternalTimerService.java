@@ -61,6 +61,7 @@ public interface InternalTimerService<N> {
 	void deleteEventTimeTimer(N namespace, long time);
 
 	/**
+	 * 遍历全部eventTimer
 	 * Performs an action for each registered timer. The timer service will
 	 * set the key context for the timers key before invoking the action.
 	 */

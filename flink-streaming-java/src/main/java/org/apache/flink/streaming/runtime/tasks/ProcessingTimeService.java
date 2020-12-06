@@ -31,11 +31,13 @@ import java.util.concurrent.TimeUnit;
 public interface ProcessingTimeService {
 
 	/**
+	 * 获取当前Processing时间
 	 * Returns the current processing time.
 	 */
 	long getCurrentProcessingTime();
 
 	/**
+	 * 注册一个timer 异步
 	 * Registers a task to be executed when (processing) time is {@code timestamp}.
 	 *
 	 * @param timestamp   Time when the task is to be executed (in processing time)

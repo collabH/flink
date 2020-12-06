@@ -29,6 +29,7 @@ import org.apache.flink.annotation.Internal;
 public interface ProcessingTimeCallback {
 
 	/**
+	 * timer触发方法
 	 * This method is invoked with the timestamp for which the trigger was scheduled.
 	 *
 	 * <p>If the triggering is delayed for whatever reason (trigger timer was blocked, JVM stalled
