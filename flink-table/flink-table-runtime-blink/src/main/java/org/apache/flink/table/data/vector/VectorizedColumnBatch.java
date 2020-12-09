@@ -41,8 +41,9 @@ public class VectorizedColumnBatch implements Serializable {
 	 * one VectorizedColumnBatch to fit in cache.
 	 */
 	public static final int DEFAULT_SIZE = 2048;
-
+	// 行数
 	private int numRows;
+	// 列个数
 	public final ColumnVector[] columns;
 
 	public VectorizedColumnBatch(ColumnVector[] vectors) {

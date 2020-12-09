@@ -27,7 +27,9 @@ import org.apache.flink.types.RowKind;
 @Internal
 public class JoinedRowData implements RowData {
 
+	// sql的行种类
 	private RowKind rowKind = RowKind.INSERT;
+	// 俩个join的rowData
 	private RowData row1;
 	private RowData row2;
 
@@ -38,6 +40,12 @@ public class JoinedRowData implements RowData {
 		this.row2 = row2;
 	}
 
+	/**
+	 * 替换join rowData 引用
+	 * @param row1
+	 * @param row2
+	 * @return
+	 */
 	public JoinedRowData replace(RowData row1, RowData row2) {
 		this.row1 = row1;
 		this.row2 = row2;
@@ -61,6 +69,7 @@ public class JoinedRowData implements RowData {
 
 	@Override
 	public boolean isNullAt(int pos) {
+		// 判断在row1还是row2
 		if (pos < row1.getArity()) {
 			return row1.isNullAt(pos);
 		} else {

@@ -26,8 +26,11 @@ import org.apache.flink.core.memory.MemorySegment;
 @Internal
 public class BinarySection implements BinaryFormat {
 
+	// 存储数据的内存段
 	protected MemorySegment[] segments;
+	// 存储此二进制数据在MemorySegment中的起始偏移量。
 	protected int offset;
+	// 数据大小
 	protected int sizeInBytes;
 
 	public BinarySection() {}

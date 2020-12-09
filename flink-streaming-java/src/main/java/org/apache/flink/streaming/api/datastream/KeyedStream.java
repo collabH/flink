@@ -1012,6 +1012,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 	}
 
 	/**
+	 * 将keyedStream发布为可查询的ValueState实例。
 	 * Publishes the keyed stream as queryable ValueState instance.
 	 *
 	 * @param queryableStateName Name under which to the publish the queryable state instance

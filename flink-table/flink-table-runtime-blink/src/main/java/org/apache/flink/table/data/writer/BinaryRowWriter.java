@@ -28,9 +28,11 @@ import org.apache.flink.types.RowKind;
  */
 @Internal
 public final class BinaryRowWriter extends AbstractBinaryWriter {
-
+	// 空的bit的数量
 	private final int nullBitsSizeInBytes;
+	// 二进制行记录
 	private final BinaryRowData row;
+	// 固定大小
 	private final int fixedSize;
 
 	public BinaryRowWriter(BinaryRowData row) {
@@ -38,12 +40,16 @@ public final class BinaryRowWriter extends AbstractBinaryWriter {
 	}
 
 	public BinaryRowWriter(BinaryRowData row, int initialSize) {
+		// 计算null只的数量
 		this.nullBitsSizeInBytes = BinaryRowData.calculateBitSetWidthInBytes(row.getArity());
+		// 获取固定长度
 		this.fixedSize = row.getFixedLengthPartSize();
+
 		this.cursor = fixedSize;
 
 		this.segment = MemorySegmentFactory.wrap(new byte[fixedSize + initialSize]);
 		this.row = row;
+		// segment只想给row
 		this.row.pointTo(segment, 0, segment.size());
 	}
 

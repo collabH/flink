@@ -25,9 +25,11 @@ import org.apache.flink.types.RowKind;
  * Java object array.
  */
 public final class UpdatableRowData implements RowData, TypedSetters {
-
+	// 行记录
 	private RowData row;
+	// 记录修改过后的值
 	private final Object[] fields;
+	// 是否updated
 	private final boolean[] updated;
 
 	public UpdatableRowData(RowData row, int arity) {

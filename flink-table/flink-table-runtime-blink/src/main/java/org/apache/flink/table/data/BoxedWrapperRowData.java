@@ -39,6 +39,7 @@ import java.util.Arrays;
  */
 public class BoxedWrapperRowData implements RowData, TypedSetters {
 
+	// sql操作类型
 	private RowKind rowKind = RowKind.INSERT; // INSERT as default
 
 	protected final Object[] fields;

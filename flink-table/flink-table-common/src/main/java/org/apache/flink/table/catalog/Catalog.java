@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
+ * 统一catalog接口
  * This interface is responsible for reading and writing metadata such as database/table/views/UDFs
  * from a registered catalog. It connects a registered catalog and Flink's Table API.
  */
@@ -52,7 +53,7 @@ public interface Catalog {
 
 	/**
 	 * Returns a factory for creating instances from catalog objects.
-	 *
+	 * 获取的工厂创建catalog对象
 	 * <p>This method enables bypassing the discovery process. Implementers can directly pass internal
 	 * catalog-specific objects to their own factory. For example, a custom {@link CatalogTable} can
 	 * be processed by a custom {@link DynamicTableFactory}.
@@ -68,7 +69,7 @@ public interface Catalog {
 	/**
 	 * Get an optional {@link TableFactory} instance that's responsible for generating table-related
 	 * instances stored in this catalog, instances such as source/sink.
-	 *
+	 * 获取一个可选的TableFactory实例，该实例负责生成此catalog中存储的与表相关的实例，例如sink/source之类的实例
 	 * @return an optional TableFactory instance
 	 * @deprecated Use {@link #getFactory()} for the new factory stack. The new factory stack uses the
 	 *             new table sources and sinks defined in FLIP-95 and a slightly different discovery mechanism.

@@ -37,9 +37,11 @@ import java.util.Arrays;
  * Columnar array to support access to vector column data.
  */
 public final class ColumnarArrayData implements ArrayData, TypedSetters {
-
+	// 存储每列的数据
 	private final ColumnVector data;
+	// 偏移量，offset+pos获取指定行的数据
 	private final int offset;
+	// 元素总数
 	private final int numElements;
 
 	public ColumnarArrayData(ColumnVector data, int offset, int numElements) {

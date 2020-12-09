@@ -29,7 +29,9 @@ import org.apache.flink.types.RowKind;
 public final class ColumnarRowData implements RowData, TypedSetters {
 
 	private RowKind rowKind = RowKind.INSERT;
+	//Verctor列批处理，存储每个列的数据，根据rowId来获取对应行的这列值，理解为列存储
 	private VectorizedColumnBatch vectorizedColumnBatch;
+	// 行id，记录处理的行数
 	private int rowId;
 
 	public ColumnarRowData() {}

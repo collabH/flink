@@ -43,6 +43,7 @@ public interface PartitionCommitTrigger {
 	void addPartition(String partition);
 
 	/**
+	 * 获取可提交的分区，并清理无用的水印和分区
 	 * Get committable partitions, and cleanup useless watermarks and partitions.
 	 */
 	List<String> committablePartitions(long checkpointId) throws IOException;
@@ -64,6 +65,7 @@ public interface PartitionCommitTrigger {
 			ClassLoader cl,
 			List<String> partitionKeys,
 			ProcessingTimeService procTimeService) throws Exception {
+		// 获取`sink.partition-commit.trigger`配置，默认为process-time触发器
 		String trigger = conf.get(SINK_PARTITION_COMMIT_TRIGGER);
 		switch (trigger) {
 			case PARTITION_TIME:

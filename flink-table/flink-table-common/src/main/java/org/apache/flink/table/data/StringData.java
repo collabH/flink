@@ -25,6 +25,7 @@ import org.apache.flink.table.types.logical.VarCharType;
 
 /**
  * An internal data structure representing data of {@link CharType} and {@link VarCharType}.
+ * 用于CharType和VarCharType的数据
  */
 @PublicEvolving
 public interface StringData extends Comparable<StringData> {

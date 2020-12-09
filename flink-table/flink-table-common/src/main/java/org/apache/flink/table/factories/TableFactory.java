@@ -41,7 +41,7 @@ public interface TableFactory {
 	/**
 	 * Specifies the context that this factory has been implemented for. The framework guarantees to
 	 * only match for this factory if the specified set of properties and values are met.
-	 *
+	 * 指定的上下文用于实现这个工厂
 	 * <p>Typical properties might be:
 	 *   - connector.type
 	 *   - format.type
@@ -56,6 +56,7 @@ public interface TableFactory {
 	Map<String, String> requiredContext();
 
 	/**
+	 * 支持的属性，#代表数组，*放到最后
 	 * List of property keys that this factory can handle. This method will be used for validation.
 	 * If a property is passed that this factory cannot handle, an exception will be thrown. The
 	 * list must not contain the keys that are specified by the context.

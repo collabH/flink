@@ -35,6 +35,7 @@ import org.apache.flink.table.types.logical.MultisetType;
 public interface MapData {
 
 	/**
+	 * 返回key的个数
 	 * Returns the number of key-value mappings in this map.
 	 */
 	int size();
@@ -47,6 +48,7 @@ public interface MapData {
 	ArrayData keyArray();
 
 	/**
+	 * 返回value的数组
 	 * Returns an array view of the values contained in this map.
 	 *
 	 * <p>A key-value pair has the same index in the key array and value array.

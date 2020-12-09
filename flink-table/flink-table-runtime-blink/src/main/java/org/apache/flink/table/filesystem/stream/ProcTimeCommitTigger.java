@@ -46,7 +46,7 @@ public class ProcTimeCommitTigger implements PartitionCommitTrigger {
 			new ListStateDescriptor<>(
 					"pending-partitions-with-time",
 					new MapSerializer<>(StringSerializer.INSTANCE, LongSerializer.INSTANCE));
-
+	// 等待的分区和创建时process时间
 	private final ListState<Map<String, Long>> pendingPartitionsState;
 	private final Map<String, Long> pendingPartitions;
 	private final long commitDelay;
@@ -77,11 +77,13 @@ public class ProcTimeCommitTigger implements PartitionCommitTrigger {
 	@Override
 	public List<String> committablePartitions(long checkpointId) {
 		List<String> needCommit = new ArrayList<>();
+		// 获取当前processTime
 		long currentProcTime = procTimeService.getCurrentProcessingTime();
 		Iterator<Map.Entry<String, Long>> iter = pendingPartitions.entrySet().iterator();
 		while (iter.hasNext()) {
 			Map.Entry<String, Long> entry = iter.next();
 			long creationTime = entry.getValue();
+			// 如果提交延迟为0或者当前process时间大于创建时间+提交延迟则提交分区
 			if (commitDelay == 0 || currentProcTime > creationTime + commitDelay) {
 				needCommit.add(entry.getKey());
 				iter.remove();

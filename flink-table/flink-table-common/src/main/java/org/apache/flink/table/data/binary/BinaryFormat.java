@@ -23,6 +23,7 @@ import org.apache.flink.core.memory.MemorySegment;
 
 /**
  * Binary format spanning {@link MemorySegment}s.
+ *	使用MemorySegment的二进制格式
  */
 @Internal
 public interface BinaryFormat {

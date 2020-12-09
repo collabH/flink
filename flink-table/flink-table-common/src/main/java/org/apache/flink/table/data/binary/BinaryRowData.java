@@ -41,7 +41,7 @@ import static org.apache.flink.util.Preconditions.checkArgument;
 /**
  * An implementation of {@link RowData} which is backed by {@link MemorySegment} instead of Object.
  * It can significantly reduce the serialization/deserialization of Java objects.
- *
+ * 固定长度和变量长度
  * <p>A Row has two part: Fixed-length part and variable-length part.
  *
  * <p>Fixed-length part contains 1 byte header and null bit set and field values. Null bit set is
@@ -63,6 +63,7 @@ public final class BinaryRowData extends BinarySection implements RowData, Typed
 
 	public static final boolean LITTLE_ENDIAN = (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN);
 	private static final long FIRST_BYTE_ZERO = LITTLE_ENDIAN ? ~0xFFL : ~(0xFFL << 56L);
+	// 头大小
 	public static final int HEADER_SIZE_IN_BITS = 8;
 
 	public static int calculateBitSetWidthInBytes(int arity) {
@@ -74,6 +75,7 @@ public final class BinaryRowData extends BinarySection implements RowData, Typed
 	}
 
 	/**
+	 * 判断是否是固定长度的类型
 	 * If it is a fixed-length field, we can call this BinaryRowData's setXX method for in-place updates.
 	 * If it is variable-length field, can't use this method, because the underlying data is stored continuously.
 	 */
@@ -102,6 +104,11 @@ public final class BinaryRowData extends BinarySection implements RowData, Typed
 		}
 	}
 
+	/**
+	 * 判断是否可变
+	 * @param type
+	 * @return
+	 */
 	public static boolean isMutable(LogicalType type) {
 		return isInFixedLengthPart(type) || type.getTypeRoot() == LogicalTypeRoot.DECIMAL;
 	}
@@ -124,6 +131,7 @@ public final class BinaryRowData extends BinarySection implements RowData, Typed
 		assert index < arity : "index (" + index + ") should < " + arity;
 	}
 
+	// 获得固定长度的小，8*字段个数
 	public int getFixedLengthPartSize() {
 		return nullBitsSizeInBytes + 8 * arity;
 	}
@@ -135,6 +143,7 @@ public final class BinaryRowData extends BinarySection implements RowData, Typed
 
 	@Override
 	public RowKind getRowKind() {
+		// 起始位置为rowKind
 		byte kindValue = segments[0].get(offset);
 		return RowKind.fromByteValue(kindValue);
 	}
@@ -159,6 +168,10 @@ public final class BinaryRowData extends BinarySection implements RowData, Typed
 		BinarySegmentUtils.bitUnSet(segments[0], offset, i + HEADER_SIZE_IN_BITS);
 	}
 
+	/**
+	 * 设置null标识
+	 * @param i
+	 */
 	@Override
 	public void setNullAt(int i) {
 		assertIndexIsValid(i);

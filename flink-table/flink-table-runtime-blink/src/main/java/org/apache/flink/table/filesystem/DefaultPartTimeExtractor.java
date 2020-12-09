@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
@@ -88,6 +89,7 @@ public class DefaultPartTimeExtractor implements PartitionTimeExtractor {
 		if (pattern == null) {
 			timestampString = partitionValues.get(0);
 		} else {
+			// 将对应的$xx替换
 			timestampString = pattern;
 			for (int i = 0; i < partitionKeys.size(); i++) {
 				timestampString = timestampString.replaceAll(
@@ -100,6 +102,7 @@ public class DefaultPartTimeExtractor implements PartitionTimeExtractor {
 
 	public static LocalDateTime toLocalDateTime(String timestampString) {
 		try {
+			// 无添加时区，会出现watermark和分区时间时区问题
 			return LocalDateTime.parse(timestampString, TIMESTAMP_FORMATTER);
 		} catch (DateTimeParseException e) {
 			return LocalDateTime.of(

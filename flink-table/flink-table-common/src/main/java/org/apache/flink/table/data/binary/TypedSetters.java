@@ -24,11 +24,13 @@ import org.apache.flink.table.data.TimestampData;
 
 /**
  * Provide type specialized setters to reduce if/else and eliminate box and unbox. This is mainly
- * used on the binary format such as {@link BinaryRowData}.
+ * used on the binary for｜mat such as {@link BinaryRowData}.
+ * 用于BinaryRowData的传输
  */
 @Internal
 public interface TypedSetters {
 
+	// 向pos位设置null
 	void setNullAt(int pos);
 
 	void setBoolean(int pos, boolean value);

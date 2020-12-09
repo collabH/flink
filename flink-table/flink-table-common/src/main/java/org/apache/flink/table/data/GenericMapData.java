@@ -27,7 +27,7 @@ import java.util.Objects;
 
 /**
  * An internal data structure representing data of {@link MapType} or {@link MultisetType}.
- *
+ * 通用存储map类型的对象，使用javamap
  * <p>{@link GenericMapData} is a generic implementation of {@link MapData} which wraps regular
  * Java maps.
  *
@@ -88,6 +88,14 @@ public final class GenericMapData implements MapData {
 		return deepEquals(map, ((GenericMapData) o).map);
 	}
 
+	/**
+	 * 深度判断俩个map是否相同
+	 * @param m1
+	 * @param m2
+	 * @param <K>
+	 * @param <V>
+	 * @return
+	 */
 	private static <K, V> boolean deepEquals(Map<K, V> m1, Map<?, ?> m2) {
 		// copied from HashMap.equals but with deepEquals comparision
 		if (m1.size() != m2.size()) {

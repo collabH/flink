@@ -114,6 +114,7 @@ import static org.apache.flink.table.types.logical.utils.LogicalTypeChecks.getSc
 public interface RowData {
 
 	/**
+	 * 返回这个row的字段的数量
 	 * Returns the number of fields in this row.
 	 *
 	 * <p>The number does not include {@link RowKind}. It is kept separately.
@@ -121,6 +122,7 @@ public interface RowData {
 	int getArity();
 
 	/**
+	 * 返回此行在变更日志中描述的变更类型
 	 * Returns the kind of change that this row describes in a changelog.
 	 *
 	 * @see RowKind
@@ -128,6 +130,7 @@ public interface RowData {
 	RowKind getRowKind();
 
 	/**
+	 * 设置change log的变更类型
 	 * Sets the kind of change that this row describes in a changelog.
 	 *
 	 * @see RowKind
@@ -139,6 +142,7 @@ public interface RowData {
 	// ------------------------------------------------------------------------------------------
 
 	/**
+	 * 判断是否为空
 	 * Returns true if the field is null at the given position.
 	 */
 	boolean isNullAt(int pos);
@@ -232,7 +236,7 @@ public interface RowData {
 
 	/**
 	 * Returns the field object in the internal row data structure at the given position.
-	 *
+	 * 根据对应类型返回调用对应方法获取value
 	 * @param row the internal row data
 	 * @param pos position of the field to return
 	 * @param fieldType the field type

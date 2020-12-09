@@ -484,7 +484,9 @@ public final class BinarySegmentUtils {
 	 */
 	public static boolean bitGet(MemorySegment segment, int baseOffset, int index) {
 		int offset = baseOffset + byteIndex(index);
+		// 获取指定位置数据
 		byte current = segment.get(offset);
+		// 判断是否为空
 		return (current & (1 << (index & BIT_BYTE_INDEX_MASK))) != 0;
 	}
 

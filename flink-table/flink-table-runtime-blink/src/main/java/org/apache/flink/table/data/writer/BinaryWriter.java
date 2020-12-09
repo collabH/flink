@@ -44,6 +44,7 @@ import static org.apache.flink.table.types.logical.utils.LogicalTypeChecks.getPr
 /**
  * Writer to write a composite data format, like row, array.
  * 1. Invoke {@link #reset()}.
+ * // 通过writeXx或者setBullAt写入每个字段，相同字段不能重复写入
  * 2. Write each field by writeXX or setNullAt. (Same field can not be written repeatedly.)
  * 3. Invoke {@link #complete()}.
  */
@@ -170,7 +171,7 @@ public interface BinaryWriter {
 
 	/**
 	 * Creates an accessor for setting the elements of an array writer during runtime.
-	 *
+	 * 创建一个ValueSetter
 	 * @param elementType the element type of the array
 	 */
 	static ValueSetter createValueSetter(LogicalType elementType) {

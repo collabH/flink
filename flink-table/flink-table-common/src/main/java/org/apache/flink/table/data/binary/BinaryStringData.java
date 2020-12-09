@@ -42,6 +42,7 @@ import static org.apache.flink.util.Preconditions.checkArgument;
 @Internal
 public final class BinaryStringData extends LazyBinaryFormat<String> implements StringData {
 
+	// 空UTF8字符串
 	public static final BinaryStringData EMPTY_UTF8 = BinaryStringData.fromBytes(StringUtf8Utils.encodeUTF8(""));
 
 	public BinaryStringData() {}
@@ -105,6 +106,7 @@ public final class BinaryStringData extends LazyBinaryFormat<String> implements 
 	 */
 	public static BinaryStringData blankString(int length) {
 		byte[] spaces = new byte[length];
+		// 填充空字符串
 		Arrays.fill(spaces, (byte) ' ');
 		return fromBytes(spaces);
 	}

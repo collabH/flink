@@ -312,6 +312,7 @@ public interface ArrayData {
 		if (!elementType.isNullable()) {
 			return elementGetter;
 		}
+		// 如果elementGetter为空
 		return (array, pos) -> {
 			if (array.isNullAt(pos)) {
 				return null;

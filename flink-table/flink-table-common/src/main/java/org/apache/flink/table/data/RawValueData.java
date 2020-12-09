@@ -35,7 +35,7 @@ public interface RawValueData<T> {
 
 	/**
 	 * Converts this {@link RawValueData} into a Java object.
-	 *
+	 * 将RawValueData转换为java对象
 	 * <p>The given serializer is required because the "raw value" might be represented in a binary format
 	 * and needs to be deserialized first.
 	 *

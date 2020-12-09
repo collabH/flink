@@ -61,11 +61,11 @@ import java.util.Arrays;
  */
 @Internal
 abstract class AbstractBinaryWriter implements BinaryWriter {
-
+	// 存储数据的地方，根据不同配置存储不同位置
 	protected MemorySegment segment;
-
+	//写入的游标
 	protected int cursor;
-
+	// 输出流包装器
 	protected DataOutputViewStreamWrapper outputView;
 
 	/**
@@ -90,12 +90,15 @@ abstract class AbstractBinaryWriter implements BinaryWriter {
 	 */
 	@Override
 	public void writeString(int pos, StringData input) {
+		// 转换为二进制String
 		BinaryStringData string = (BinaryStringData) input;
+		// 如果不存在存储其的segment创建新的segement
 		if (string.getSegments() == null) {
 			String javaObject = string.toString();
 			writeBytes(pos, javaObject.getBytes(StandardCharsets.UTF_8));
 		} else {
 			int len = string.getSizeInBytes();
+			// 如果长度小于7，写入固定长度，否则写入可变长度部分
 			if (len <= 7) {
 				byte[] bytes = BinarySegmentUtils.allocateReuseBytes(len);
 				BinarySegmentUtils.copyToBytes(string.getSegments(), string.getOffset(), bytes, 0, len);

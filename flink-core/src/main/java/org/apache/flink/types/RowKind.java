@@ -35,6 +35,7 @@ public enum RowKind {
 	INSERT("+I", (byte) 0),
 
 	/**
+	 * 修改之前的数据
 	 * Update operation with the previous content of the updated row.
 	 *
 	 * <p>This kind SHOULD occur together with {@link #UPDATE_AFTER} for modelling an update that needs
@@ -44,6 +45,7 @@ public enum RowKind {
 	UPDATE_BEFORE("-U", (byte) 1),
 
 	/**
+	 * 修改之后的数据
 	 * Update operation with new content of the updated row.
 	 *
 	 * <p>This kind CAN occur together with {@link #UPDATE_BEFORE} for modelling an update that
