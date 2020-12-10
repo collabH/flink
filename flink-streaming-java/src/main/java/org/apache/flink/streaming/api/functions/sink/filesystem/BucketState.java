@@ -33,7 +33,7 @@ import java.util.Map;
  */
 @Internal
 class BucketState<BucketID> {
-
+	// bucketId
 	private final BucketID bucketId;
 
 	/** The directory where all the part files of the bucket are stored. */

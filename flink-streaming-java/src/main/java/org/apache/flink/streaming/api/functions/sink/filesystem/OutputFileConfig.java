@@ -29,12 +29,13 @@ import java.io.Serializable;
  */
 public class OutputFileConfig implements Serializable {
 
+	// 块前缀
 	private final String partPrefix;
-
+	// 块后缀
 	private final String partSuffix;
 
 	/**
-	 *	Initiates the {@code PartFileConfig} with values passed as parameters.
+	 * Initiates the {@code PartFileConfig} with values passed as parameters.
 	 *
 	 * @param partPrefix - the beginning of part file name
 	 * @param partSuffix - the ending of part file name

@@ -51,7 +51,7 @@ public class StreamingFileSinkHelper<IN> implements ProcessingTimeCallback {
 	private final long bucketCheckInterval;
 
 	private final ProcessingTimeService procTimeService;
-
+	// file buckets
 	private final Buckets<IN, ?> buckets;
 
 	private final ListState<byte[]> bucketStates;

@@ -49,28 +49,28 @@ import static org.apache.flink.util.Preconditions.checkState;
 public class Bucket<IN, BucketID> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Bucket.class);
-
+	// bucketId
 	private final BucketID bucketId;
-
+	// bucket存储路径
 	private final Path bucketPath;
-
+	// 子任务index
 	private final int subtaskIndex;
-
+	// bucket写入器
 	private final BucketWriter<IN, BucketID> bucketWriter;
-
+	// 回滚策略
 	private final RollingPolicy<IN, BucketID> rollingPolicy;
-
+	// key是checkpointId，value为处理中的文件恢复器，恢复文件
 	private final NavigableMap<Long, InProgressFileWriter.InProgressFileRecoverable> inProgressFileRecoverablesPerCheckpoint;
-
 	private final NavigableMap<Long, List<InProgressFileWriter.PendingFileRecoverable>> pendingFileRecoverablesPerCheckpoint;
-
+	// 输出文件配置
 	private final OutputFileConfig outputFileConfig;
-
+	// 块计数器
 	private long partCounter;
 
+	// 处理中文件写入器
 	@Nullable
 	private InProgressFileWriter<IN, BucketID> inProgressPart;
-
+	// 当前checkpointId需要恢复的pendingFile
 	private List<InProgressFileWriter.PendingFileRecoverable> pendingFileRecoverablesForCurrentCheckpoint;
 
 	/**
@@ -117,8 +117,9 @@ public class Bucket<IN, BucketID> {
 				partFileFactory,
 				rollingPolicy,
 				outputFileConfig);
-
+		// 恢复InProgressFile
 		restoreInProgressFile(bucketState);
+		// 提交恢复Pending文件
 		commitRecoveredPendingFiles(bucketState);
 	}
 
@@ -129,7 +130,7 @@ public class Bucket<IN, BucketID> {
 
 		// we try to resume the previous in-progress file
 		final InProgressFileWriter.InProgressFileRecoverable inProgressFileRecoverable = state.getInProgressFileRecoverable();
-
+		// 是否支持将数据附加到已还原的正在进行的文件中
 		if (bucketWriter.getProperties().supportsResume()) {
 			inProgressPart = bucketWriter.resumeInProgressFileFrom(
 					bucketId, inProgressFileRecoverable, state.getInProgressFileCreationTime());

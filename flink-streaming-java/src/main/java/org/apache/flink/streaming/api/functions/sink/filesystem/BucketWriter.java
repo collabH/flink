@@ -95,6 +95,7 @@ public interface BucketWriter<IN, BucketID> {
 		void commit() throws IOException;
 
 		/**
+		 * 恢复之后提交文件
 		 * Commits the pending file, making it visible. The file will contain the exact data
 		 * as when the pending file was created.
 		 *

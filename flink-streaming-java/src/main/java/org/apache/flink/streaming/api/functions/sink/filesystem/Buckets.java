@@ -52,9 +52,9 @@ public class Buckets<IN, BucketID> {
 	private static final Logger LOG = LoggerFactory.getLogger(Buckets.class);
 
 	// ------------------------ configuration fields --------------------------
-
+	// 基础写入文件路径
 	private final Path basePath;
-
+	// bucket工厂,用于创建bucket，恢复旧bucket
 	private final BucketFactory<IN, BucketID> bucketFactory;
 
 	private final BucketAssigner<IN, BucketID> bucketAssigner;

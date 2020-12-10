@@ -50,7 +50,7 @@ public class StreamingFileWriter extends AbstractStreamOperator<CommitMessage>
 	private static final long serialVersionUID = 1L;
 
 	// ------------------------ configuration fields --------------------------
-
+	//  bucket校验间隔
 	private final long bucketCheckInterval;
 
 	private final StreamingFileSink.BucketsBuilder<RowData, String, ? extends
@@ -59,11 +59,11 @@ public class StreamingFileWriter extends AbstractStreamOperator<CommitMessage>
 	// --------------------------- runtime fields -----------------------------
 
 	private transient Buckets<RowData, String> buckets;
-
+	// streamFileSink帮助器
 	private transient StreamingFileSinkHelper<RowData> helper;
-
+	// 当前watermark
 	private transient long currentWatermark;
-
+	// 非活动分区集合
 	private transient Set<String> inactivePartitions;
 
 	public StreamingFileWriter(

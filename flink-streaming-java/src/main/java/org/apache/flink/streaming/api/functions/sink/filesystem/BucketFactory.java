@@ -30,6 +30,18 @@ import java.io.Serializable;
 @Internal
 interface BucketFactory<IN, BucketID> extends Serializable {
 
+	/**
+	 * 获取一个新的bucket
+	 * @param subtaskIndex 子任务的index
+	 * @param bucketId bucketId
+	 * @param bucketPath bucket路径
+	 * @param initialPartCounter 初始化块计数器
+	 * @param bucketWriter bucket写入器
+	 * @param rollingPolicy 回滚策略
+	 * @param outputFileConfig 输出文件配置
+	 * @return
+	 * @throws IOException
+	 */
 	Bucket<IN, BucketID> getNewBucket(
 			final int subtaskIndex,
 			final BucketID bucketId,
@@ -39,6 +51,17 @@ interface BucketFactory<IN, BucketID> extends Serializable {
 			final RollingPolicy<IN, BucketID> rollingPolicy,
 			final OutputFileConfig outputFileConfig) throws IOException;
 
+	/**
+	 * 重新加载bucket
+	 * @param subtaskIndex
+	 * @param initialPartCounter
+	 * @param bucketWriter
+	 * @param rollingPolicy
+	 * @param bucketState
+	 * @param outputFileConfig
+	 * @return
+	 * @throws IOException
+	 */
 	Bucket<IN, BucketID> restoreBucket(
 			final int subtaskIndex,
 			final long initialPartCounter,
