@@ -101,6 +101,7 @@ public abstract class AbstractPartitionDiscoverer {
 	 */
 	public void close() throws Exception {
 		closed = true;
+		// 关闭consumer链接
 		closeConnections();
 	}
 

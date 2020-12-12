@@ -220,6 +220,7 @@ public class KafkaConsumerThread<T> extends Thread {
 						// also record that a commit is already in progress
 						// the order here matters! first set the flag, then send the commit command.
 						commitInProgress = true;
+						// 提交offset
 						consumer.commitAsync(commitOffsetsAndCallback.f0, new CommitCallback(commitOffsetsAndCallback.f1));
 					}
 				}

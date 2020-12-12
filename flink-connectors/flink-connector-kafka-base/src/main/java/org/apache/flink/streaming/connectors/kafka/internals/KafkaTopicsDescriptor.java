@@ -37,7 +37,9 @@ public class KafkaTopicsDescriptor implements Serializable {
 
 	private static final long serialVersionUID = -3807227764764900975L;
 
+	// 固定topic
 	private final List<String> fixedTopics;
+	// topic匹配符
 	private final Pattern topicPattern;
 
 	public KafkaTopicsDescriptor(@Nullable List<String> fixedTopics, @Nullable Pattern topicPattern) {
@@ -62,7 +64,7 @@ public class KafkaTopicsDescriptor implements Serializable {
 
 	/**
 	 * Check if the input topic matches the topics described by this KafkaTopicDescriptor.
-	 *
+	 * 校验topic是否匹配
 	 * @return true if found a match.
 	 */
 	public boolean isMatchingTopic(String topic) {

@@ -29,6 +29,7 @@ public abstract class TableFunctionResultFuture<T> extends AbstractRichFunction 
 	private static final long serialVersionUID = 1L;
 
 	private Object input;
+	// 异步上报结果使用的future
 	private ResultFuture<?> resultFuture;
 
 	/**

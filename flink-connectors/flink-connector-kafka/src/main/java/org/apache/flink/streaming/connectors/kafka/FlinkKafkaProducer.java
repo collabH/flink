@@ -185,6 +185,7 @@ public class FlinkKafkaProducer<IN>
 	private static final ListStateDescriptor<FlinkKafkaProducer.NextTransactionalIdHint> NEXT_TRANSACTIONAL_ID_HINT_DESCRIPTOR =
 		new ListStateDescriptor<>("next-transactional-id-hint", TypeInformation.of(NextTransactionalIdHint.class));
 
+	// 存储下一个事务id NextTransactionalIdHint的状态描述
 	private static final ListStateDescriptor<FlinkKafkaProducer.NextTransactionalIdHint> NEXT_TRANSACTIONAL_ID_HINT_DESCRIPTOR_V2 =
 		new ListStateDescriptor<>("next-transactional-id-hint-v2", new NextTransactionalIdHintSerializer());
 
@@ -194,21 +195,25 @@ public class FlinkKafkaProducer<IN>
 	private transient ListState<FlinkKafkaProducer.NextTransactionalIdHint> nextTransactionalIdHintState;
 
 	/**
+	 * 事务id生成器
 	 * Generator for Transactional IDs.
 	 */
 	private transient TransactionalIdsGenerator transactionalIdsGenerator;
 
 	/**
+	 *选择下一个事务ID的提示
 	 * Hint for picking next transactional id.
 	 */
 	private transient FlinkKafkaProducer.NextTransactionalIdHint nextTransactionalIdHint;
 
 	/**
+	 * 用户定义的生产者配置
 	 * User defined properties for the Producer.
 	 */
 	protected final Properties producerConfig;
 
 	/**
+	 * 默认topicId
 	 * The name of the default topic this producer is writing data to.
 	 */
 	protected final String defaultTopicId;
@@ -228,6 +233,7 @@ public class FlinkKafkaProducer<IN>
 	private final KafkaSerializationSchema<IN> kafkaSchema;
 
 	/**
+	 * kakfka分区器，默认为parallelInstanceId%分区个数
 	 * User-provided partitioner for assigning an object to a Kafka partition for each topic.
 	 */
 	@Nullable
@@ -239,6 +245,7 @@ public class FlinkKafkaProducer<IN>
 	protected final Map<String, int[]> topicPartitionsMap;
 
 	/**
+	 * 控制每次生成的事务id个数
 	 * Max number of producers in the pool. If all producers are in use, snapshoting state will throw an exception.
 	 */
 	private final int kafkaProducersPoolSize;
@@ -249,6 +256,7 @@ public class FlinkKafkaProducer<IN>
 	private final BlockingDeque<String> availableTransactionalIds = new LinkedBlockingDeque<>();
 
 	/**
+	 * 是否记录记录写入时间
 	 * Flag controlling whether we are writing the Flink record's timestamp into Kafka.
 	 */
 	protected boolean writeTimestampToKafka = false;
@@ -274,6 +282,7 @@ public class FlinkKafkaProducer<IN>
 	protected transient volatile Exception asyncException;
 
 	/** Number of unacknowledged records. */
+	// 注册的记录数
 	protected final AtomicLong pendingRecords = new AtomicLong();
 
 	/** Cache of metrics to replace already registered metrics instead of overwriting existing ones. */
@@ -316,7 +325,7 @@ public class FlinkKafkaProducer<IN>
 	public FlinkKafkaProducer(String topicId, SerializationSchema<IN> serializationSchema, Properties producerConfig) {
 		this(topicId, serializationSchema, producerConfig, Optional.of(new FlinkFixedPartitioner<>()));
 	}
-
+	// fixme
 	/**
 	 * Creates a FlinkKafkaProducer for a given topic. The sink produces its input to
 	 * the topic. It accepts a key-less {@link SerializationSchema} and possibly a custom {@link FlinkKafkaPartitioner}.
@@ -690,7 +699,7 @@ public class FlinkKafkaProducer<IN>
 		if (!this.producerConfig.containsKey(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG)) {
 			throw new IllegalArgumentException(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG + " must be supplied in the producer config properties.");
 		}
-
+		// 如果事务超时时间配置不存在，则使用默认超时时间
 		if (!producerConfig.containsKey(ProducerConfig.TRANSACTION_TIMEOUT_CONFIG)) {
 			long timeout = DEFAULT_KAFKA_TRANSACTION_TIMEOUT.toMilliseconds();
 			checkState(timeout < Integer.MAX_VALUE && timeout > 0, "timeout does not fit into 32 bit integer");
@@ -769,6 +778,7 @@ public class FlinkKafkaProducer<IN>
 	 */
 	@Override
 	public void open(Configuration configuration) throws Exception {
+		// 根据是否打印错误日志配置来创建对应的回调函数
 		if (logFailuresOnly) {
 			callback = new Callback() {
 				@Override
@@ -799,11 +809,19 @@ public class FlinkKafkaProducer<IN>
 		super.open(configuration);
 	}
 
+	/**
+	 * 处理每条记录
+	 * @param transaction
+	 * @param next
+	 * @param context
+	 * @throws FlinkKafkaException
+	 */
 	@Override
 	public void invoke(FlinkKafkaProducer.KafkaTransactionState transaction, IN next, Context context) throws FlinkKafkaException {
 		checkErroneous();
 
 		ProducerRecord<byte[], byte[]> record;
+		// 如果使用的是KeyedSchema序列化器
 		if (keyedSchema != null) {
 			byte[] serializedKey = keyedSchema.serializeKey(next);
 			byte[] serializedValue = keyedSchema.serializeValue(next);
@@ -845,12 +863,14 @@ public class FlinkKafkaProducer<IN>
 				int[] partitions = topicPartitionsMap.get(targetTopic);
 
 				if (null == partitions) {
+					// 获取topic的分区
 					partitions = getPartitionsByTopic(targetTopic, transaction.producer);
 					topicPartitionsMap.put(targetTopic, partitions);
 				}
-
+				// 设置分区到schema上下文中
 				contextAwareSchema.setPartitions(partitions);
 			}
+			// 序列化记录和记录时间
 			record = kafkaSchema.serialize(next, context.timestamp());
 		} else {
 			throw new RuntimeException(
@@ -859,6 +879,7 @@ public class FlinkKafkaProducer<IN>
 		}
 
 		pendingRecords.incrementAndGet();
+		// 发送消息
 		transaction.producer.send(record, callback);
 	}
 
@@ -866,6 +887,7 @@ public class FlinkKafkaProducer<IN>
 	public void close() throws FlinkKafkaException {
 		// First close the producer for current transaction.
 		try {
+			// 获取当前事务
 			final KafkaTransactionState currentTransaction = currentTransaction();
 			if (currentTransaction != null) {
 				// to avoid exceptions on aborting transactions with some pending records
@@ -915,16 +937,19 @@ public class FlinkKafkaProducer<IN>
 	protected FlinkKafkaProducer.KafkaTransactionState beginTransaction() throws FlinkKafkaException {
 		switch (semantic) {
 			case EXACTLY_ONCE:
+				// 创建事务生产者
 				FlinkKafkaInternalProducer<byte[], byte[]> producer = createTransactionalProducer();
 				producer.beginTransaction();
 				return new FlinkKafkaProducer.KafkaTransactionState(producer.getTransactionalId(), producer);
 			case AT_LEAST_ONCE:
 			case NONE:
 				// Do not create new producer on each beginTransaction() if it is not necessary
+				// 获取当前事务状态
 				final FlinkKafkaProducer.KafkaTransactionState currentTransaction = currentTransaction();
 				if (currentTransaction != null && currentTransaction.producer != null) {
 					return new FlinkKafkaProducer.KafkaTransactionState(currentTransaction.producer);
 				}
+				// 初始化非事务生产者
 				return new FlinkKafkaProducer.KafkaTransactionState(initNonTransactionalProducer(true));
 			default:
 				throw new UnsupportedOperationException("Not implemented semantic");
@@ -936,6 +961,7 @@ public class FlinkKafkaProducer<IN>
 		switch (semantic) {
 			case EXACTLY_ONCE:
 			case AT_LEAST_ONCE:
+				// 处理生产者消息，事务消息发送到request队列
 				flush(transaction);
 				break;
 			case NONE:
@@ -950,21 +976,31 @@ public class FlinkKafkaProducer<IN>
 	protected void commit(FlinkKafkaProducer.KafkaTransactionState transaction) {
 		if (transaction.isTransactional()) {
 			try {
+				// 提交事务
 				transaction.producer.commitTransaction();
 			} finally {
+				// 将提交失败的事务id放入阻塞队列中，并且重新发送事务消息请求
 				recycleTransactionalProducer(transaction.producer);
 			}
 		}
 	}
 
+	/**
+	 * 恢复和提交事务生产者
+	 * @param transaction
+	 */
 	@Override
 	protected void recoverAndCommit(FlinkKafkaProducer.KafkaTransactionState transaction) {
+		// 如果为事务消息
 		if (transaction.isTransactional()) {
 			FlinkKafkaInternalProducer<byte[], byte[]> producer = null;
 			try {
+				// 初始化事务生产者
 				producer =
 					initTransactionalProducer(transaction.transactionalId, false);
+				// 重新precomit
 				producer.resumeTransaction(transaction.producerId, transaction.epoch);
+				// 提交事务
 				producer.commitTransaction();
 			} catch (InvalidTxnStateException | ProducerFencedException ex) {
 				// That means we have committed this transaction before.
@@ -982,19 +1018,23 @@ public class FlinkKafkaProducer<IN>
 
 	@Override
 	protected void abort(FlinkKafkaProducer.KafkaTransactionState transaction) {
+		// 判断是否为事务producer，如果是种植事务
 		if (transaction.isTransactional()) {
 			transaction.producer.abortTransaction();
+			// 并将事务id归还阻塞队列
 			recycleTransactionalProducer(transaction.producer);
 		}
 	}
 
 	@Override
 	protected void recoverAndAbort(FlinkKafkaProducer.KafkaTransactionState transaction) {
+		// 恢复事务状态并终止事务
 		if (transaction.isTransactional()) {
 			FlinkKafkaInternalProducer<byte[], byte[]> producer = null;
 			try {
 				producer =
 						initTransactionalProducer(transaction.transactionalId, false);
+				// 初始化事务
 				producer.initTransactions();
 			} finally {
 				if (producer != null) {
@@ -1010,6 +1050,7 @@ public class FlinkKafkaProducer<IN>
 	 * If not, be sure to know what you are doing.
 	 */
 	protected void acknowledgeMessage() {
+		// 移除等待的记录
 		pendingRecords.decrementAndGet();
 	}
 
@@ -1018,6 +1059,7 @@ public class FlinkKafkaProducer<IN>
 	 * @param transaction
 	 */
 	private void flush(FlinkKafkaProducer.KafkaTransactionState transaction) throws FlinkKafkaException {
+		// 刷新生产者最近消息
 		if (transaction.producer != null) {
 			transaction.producer.flush();
 		}
@@ -1030,24 +1072,33 @@ public class FlinkKafkaProducer<IN>
 		checkErroneous();
 	}
 
+	/**
+	 * checkpoint
+	 * @param context
+	 * @throws Exception
+	 */
 	@Override
 	public void snapshotState(FunctionSnapshotContext context) throws Exception {
 		super.snapshotState(context);
-
+		// 情况下一个事务id状态
 		nextTransactionalIdHintState.clear();
 		// To avoid duplication only first subtask keeps track of next transactional id hint. Otherwise all of the
 		// subtasks would write exactly same information.
+		// 校验当前任务事务为第一个
 		if (getRuntimeContext().getIndexOfThisSubtask() == 0 && semantic == FlinkKafkaProducer.Semantic.EXACTLY_ONCE) {
 			checkState(nextTransactionalIdHint != null, "nextTransactionalIdHint must be set for EXACTLY_ONCE");
+			// 获取下一个事务id
 			long nextFreeTransactionalId = nextTransactionalIdHint.nextFreeTransactionalId;
 
 			// If we scaled up, some (unknown) subtask must have created new transactional ids from scratch. In that
 			// case we adjust nextFreeTransactionalId by the range of transactionalIds that could be used for this
 			// scaling up.
 			if (getRuntimeContext().getNumberOfParallelSubtasks() > nextTransactionalIdHint.lastParallelism) {
+				// 调整事务id
 				nextFreeTransactionalId += getRuntimeContext().getNumberOfParallelSubtasks() * kafkaProducersPoolSize;
 			}
 
+			// 生成事务id和任务并行度
 			nextTransactionalIdHintState.add(new FlinkKafkaProducer.NextTransactionalIdHint(
 				getRuntimeContext().getNumberOfParallelSubtasks(),
 				nextFreeTransactionalId));
@@ -1060,21 +1111,23 @@ public class FlinkKafkaProducer<IN>
 			LOG.warn("Using {} semantic, but checkpointing is not enabled. Switching to {} semantic.", semantic, FlinkKafkaProducer.Semantic.NONE);
 			semantic = FlinkKafkaProducer.Semantic.NONE;
 		}
-
+		// 获取事务id
 		nextTransactionalIdHintState = context.getOperatorStateStore().getUnionListState(
 			NEXT_TRANSACTIONAL_ID_HINT_DESCRIPTOR_V2);
 
+		// 兼容V1版本的事务状态
 		if (context.getOperatorStateStore().getRegisteredStateNames().contains(NEXT_TRANSACTIONAL_ID_HINT_DESCRIPTOR)) {
 			migrateNextTransactionalIdHindState(context);
 		}
 
+		// 创建事务id生成器
 		transactionalIdsGenerator = new TransactionalIdsGenerator(
 			getRuntimeContext().getTaskName() + "-" + ((StreamingRuntimeContext) getRuntimeContext()).getOperatorUniqueID(),
 			getRuntimeContext().getIndexOfThisSubtask(),
 			getRuntimeContext().getNumberOfParallelSubtasks(),
 			kafkaProducersPoolSize,
 			SAFE_SCALE_DOWN_FACTOR);
-
+		// 如果不是EXACTLY_ONCE无需关心事务id
 		if (semantic != FlinkKafkaProducer.Semantic.EXACTLY_ONCE) {
 			nextTransactionalIdHint = null;
 		} else {
@@ -1083,6 +1136,7 @@ public class FlinkKafkaProducer<IN>
 				throw new IllegalStateException(
 					"There should be at most one next transactional id hint written by the first subtask");
 			} else if (transactionalIdHints.size() == 0) {
+				// 新建事务id
 				nextTransactionalIdHint = new FlinkKafkaProducer.NextTransactionalIdHint(0, 0);
 
 				// this means that this is either:
@@ -1090,12 +1144,14 @@ public class FlinkKafkaProducer<IN>
 				// (2) previous execution has failed before first checkpoint completed
 				//
 				// in case of (2) we have to abort all previous transactions
+				// 终止推断遗留的为提交事务
 				abortTransactions(transactionalIdsGenerator.generateIdsToAbort());
 			} else {
+				// 获取下一个事务id
 				nextTransactionalIdHint = transactionalIdHints.get(0);
 			}
 		}
-
+		// 初始化状态
 		super.initializeState(context);
 	}
 
@@ -1104,15 +1160,17 @@ public class FlinkKafkaProducer<IN>
 		if (semantic != FlinkKafkaProducer.Semantic.EXACTLY_ONCE) {
 			return Optional.empty();
 		}
-
+		// 生成事务id
 		Set<String> transactionalIds = generateNewTransactionalIds();
+		// 重制可用事务id pool
 		resetAvailableTransactionalIdsPool(transactionalIds);
+		// 创建事务上下文，包含可以使用的事务id
 		return Optional.of(new FlinkKafkaProducer.KafkaTransactionContext(transactionalIds));
 	}
 
 	private Set<String> generateNewTransactionalIds() {
 		checkState(nextTransactionalIdHint != null, "nextTransactionalIdHint must be present for EXACTLY_ONCE");
-
+		// 调用生成事务id
 		Set<String> transactionalIds = transactionalIdsGenerator.generateIdsToUse(nextTransactionalIdHint.nextFreeTransactionalId);
 		LOG.info("Generated new transactionalIds {}", transactionalIds);
 		return transactionalIds;
@@ -1147,6 +1205,7 @@ public class FlinkKafkaProducer<IN>
 
 	private void resetAvailableTransactionalIdsPool(Collection<String> transactionalIds) {
 		availableTransactionalIds.clear();
+		// 加入事务id阻塞队列
 		availableTransactionalIds.addAll(transactionalIds);
 	}
 
@@ -1171,6 +1230,7 @@ public class FlinkKafkaProducer<IN>
 					kafkaProducer =
 							new FlinkKafkaInternalProducer<>(myConfig);
 					// it suffices to call initTransactions - this will abort any lingering transactions
+					// 初始化事务，可以终止所有未完成的延迟事务
 					kafkaProducer.initTransactions();
 				} finally {
 					if (kafkaProducer != null) {
@@ -1207,30 +1267,38 @@ public class FlinkKafkaProducer<IN>
 	}
 
 	private void recycleTransactionalProducer(FlinkKafkaInternalProducer<byte[], byte[]> producer) {
+		// 加入可用事务id
 		availableTransactionalIds.add(producer.getTransactionalId());
+		// flush操作
 		producer.flush();
 		producer.close(Duration.ofSeconds(0));
 	}
 
 	private FlinkKafkaInternalProducer<byte[], byte[]> initTransactionalProducer(String transactionalId, boolean registerMetrics) {
 		initTransactionalProducerConfig(producerConfig, transactionalId);
+		// 初始化procuer
 		return initProducer(registerMetrics);
 	}
 
 	private static void initTransactionalProducerConfig(Properties producerConfig, String transactionalId) {
+		// 配置producer配置
 		producerConfig.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionalId);
 	}
 
 	private FlinkKafkaInternalProducer<byte[], byte[]> initNonTransactionalProducer(boolean registerMetrics) {
+		// 移除事务id
 		producerConfig.remove(ProducerConfig.TRANSACTIONAL_ID_CONFIG);
+		// 初始化普通生产者
 		return initProducer(registerMetrics);
 	}
 
 	private FlinkKafkaInternalProducer<byte[], byte[]> initProducer(boolean registerMetrics) {
+		// 创建producer
 		FlinkKafkaInternalProducer<byte[], byte[]> producer = createProducer();
 
 		RuntimeContext ctx = getRuntimeContext();
 
+		// 设置分区所需的并行度和总task nuber
 		if (flinkKafkaPartitioner != null) {
 			flinkKafkaPartitioner.open(ctx.getIndexOfThisSubtask(), ctx.getNumberOfParallelSubtasks());
 		}
@@ -1246,6 +1314,7 @@ public class FlinkKafkaProducer<IN>
 		LOG.info("Starting FlinkKafkaInternalProducer ({}/{}) to produce into default topic {}",
 			ctx.getIndexOfThisSubtask() + 1, ctx.getNumberOfParallelSubtasks(), defaultTopicId);
 
+		// 添加kafka指标采集器
 		// register Kafka metrics to Flink accumulators
 		if (registerMetrics && !Boolean.parseBoolean(producerConfig.getProperty(KEY_DISABLE_METRICS, "false"))) {
 			Map<MetricName, ? extends Metric> metrics = producer.metrics();
@@ -1295,6 +1364,7 @@ public class FlinkKafkaProducer<IN>
 			NEXT_TRANSACTIONAL_ID_HINT_DESCRIPTOR);
 		nextTransactionalIdHintState = context.getOperatorStateStore().getUnionListState(NEXT_TRANSACTIONAL_ID_HINT_DESCRIPTOR_V2);
 
+		// 合并状态
 		ArrayList<NextTransactionalIdHint> oldTransactionalIdHints = Lists.newArrayList(oldNextTransactionalIdHintState.get());
 		if (!oldTransactionalIdHints.isEmpty()) {
 			nextTransactionalIdHintState.addAll(oldTransactionalIdHints);
@@ -1655,7 +1725,9 @@ public class FlinkKafkaProducer<IN>
 	 * Keep information required to deduce next safe to use transactional id.
 	 */
 	public static class NextTransactionalIdHint {
+		// 上一个事务并行度
 		public int lastParallelism = 0;
+		// 下一个事务id
 		public long nextFreeTransactionalId = 0;
 
 		public NextTransactionalIdHint() {

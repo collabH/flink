@@ -30,6 +30,7 @@ public enum StartupMode {
 	GROUP_OFFSETS(KafkaTopicPartitionStateSentinel.GROUP_OFFSET),
 
 	/** Start from the earliest offset possible. */
+	// 从最开始的offset开始消费
 	EARLIEST(KafkaTopicPartitionStateSentinel.EARLIEST_OFFSET),
 
 	/** Start from the latest offset. */

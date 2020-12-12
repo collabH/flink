@@ -81,10 +81,12 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 	// ------------------------------------------------------------------------
 
 	/** User-supplied properties for Kafka. **/
+	// kafka配置
 	protected final Properties properties;
 
 	/** From Kafka's Javadoc: The time, in milliseconds, spent waiting in poll if data is not
 	 * available. If 0, returns immediately with any records that are available now */
+	// 拉取数据超时时间
 	protected final long pollTimeout;
 
 	// ------------------------------------------------------------------------
@@ -191,6 +193,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 			!getBoolean(props, KEY_DISABLE_METRICS, false));
 
 		this.properties = props;
+		// 设置反序列化器
 		setDeserializer(this.properties);
 
 		// configure the polling timeout
@@ -219,7 +222,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		// make sure that auto commit is disabled when our offset commit mode is ON_CHECKPOINTS;
 		// this overwrites whatever setting the user configured in the properties
 		adjustAutoCommitConfig(properties, offsetCommitMode);
-
+		// 创建kafka消息拉取器
 		return new KafkaFetcher<>(
 			sourceContext,
 			assignedPartitionsWithInitialOffsets,
@@ -241,7 +244,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		KafkaTopicsDescriptor topicsDescriptor,
 		int indexOfThisSubtask,
 		int numParallelSubtasks) {
-
+		// 相当于消费者，不过能够获取topic和分区信息
 		return new KafkaPartitionDiscoverer(topicsDescriptor, indexOfThisSubtask, numParallelSubtasks, properties);
 	}
 
@@ -251,6 +254,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		long timestamp) {
 
 		Map<TopicPartition, Long> partitionOffsetsRequest = new HashMap<>(partitions.size());
+		// 设置每个分区的offset从timestamp读取
 		for (KafkaTopicPartition partition : partitions) {
 			partitionOffsetsRequest.put(
 				new TopicPartition(partition.getTopic(), partition.getPartition()),
@@ -262,6 +266,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		// this is ok because this is a one-time operation that happens only on startup
 		try (KafkaConsumer<?, ?> consumer = new KafkaConsumer(properties)) {
 			for (Map.Entry<TopicPartition, OffsetAndTimestamp> partitionToOffset :
+				// 指定从对应timestamp开始消费
 				consumer.offsetsForTimes(partitionOffsetsRequest).entrySet()) {
 
 				result.put(
@@ -286,7 +291,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 	 */
 	private static void setDeserializer(Properties props) {
 		final String deSerName = ByteArrayDeserializer.class.getName();
-
+		// 从properties读取对应配置，仅支持ByteArrayDeserializer
 		Object keyDeSer = props.get(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG);
 		Object valDeSer = props.get(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG);
 

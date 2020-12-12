@@ -61,6 +61,7 @@ import java.util.concurrent.TimeUnit;
 public class FlinkKafkaInternalProducer<K, V> implements Producer<K, V> {
 	private static final Logger LOG = LoggerFactory.getLogger(FlinkKafkaInternalProducer.class);
 
+	// kafka-client producer
 	protected final KafkaProducer<K, V> kafkaProducer;
 
 	// This lock and closed flag are introduced to workaround KAFKA-6635. Because the bug is only fixed in
@@ -68,9 +69,11 @@ public class FlinkKafkaInternalProducer<K, V> implements Producer<K, V> {
 	// between a transaction committing / aborting thread and a producer closing thread.
 	// TODO: remove the workaround after Kafka dependency is bumped to 2.3.0+
 	private final Object producerClosingLock;
+	// 是否关闭标示
 	private volatile boolean closed;
 
 	@Nullable
+	// 事务id
 	protected final String transactionalId;
 
 	public FlinkKafkaInternalProducer(Properties properties) {
@@ -86,6 +89,7 @@ public class FlinkKafkaInternalProducer<K, V> implements Producer<K, V> {
 	public void initTransactions() {
 		synchronized (producerClosingLock) {
 			ensureNotClosed();
+			// 初始化事务
 			kafkaProducer.initTransactions();
 		}
 	}
@@ -94,6 +98,7 @@ public class FlinkKafkaInternalProducer<K, V> implements Producer<K, V> {
 	public void beginTransaction() throws ProducerFencedException {
 		synchronized (producerClosingLock) {
 			ensureNotClosed();
+			// 开启事务
 			kafkaProducer.beginTransaction();
 		}
 	}
@@ -102,6 +107,7 @@ public class FlinkKafkaInternalProducer<K, V> implements Producer<K, V> {
 	public void commitTransaction() throws ProducerFencedException {
 		synchronized (producerClosingLock) {
 			ensureNotClosed();
+			// 提交事务
 			kafkaProducer.commitTransaction();
 		}
 	}
@@ -110,6 +116,7 @@ public class FlinkKafkaInternalProducer<K, V> implements Producer<K, V> {
 	public void abortTransaction() throws ProducerFencedException {
 		synchronized (producerClosingLock) {
 			ensureNotClosed();
+			// 中断事务
 			kafkaProducer.abortTransaction();
 		}
 	}
@@ -183,9 +190,11 @@ public class FlinkKafkaInternalProducer<K, V> implements Producer<K, V> {
 	@Override
 	public void flush() {
 		kafkaProducer.flush();
+		// 如果存在事务消息，需要将事务消息提交
 		if (transactionalId != null) {
 			synchronized (producerClosingLock) {
 				ensureNotClosed();
+				// 发送事务消息请求
 				flushNewPartitions();
 			}
 		}
@@ -199,6 +208,7 @@ public class FlinkKafkaInternalProducer<K, V> implements Producer<K, V> {
 	 */
 	public void resumeTransaction(long producerId, short epoch) {
 		synchronized (producerClosingLock) {
+			// 校验producer是否关闭
 			ensureNotClosed();
 			Preconditions.checkState(producerId >= 0 && epoch >= 0,
 				"Incorrect values for producerId %s and epoch %s",
@@ -208,7 +218,7 @@ public class FlinkKafkaInternalProducer<K, V> implements Producer<K, V> {
 				transactionalId,
 				producerId,
 				epoch);
-
+			// 反射获取事务管理器
 			Object transactionManager = getField(kafkaProducer, "transactionManager");
 			synchronized (transactionManager) {
 				Object topicPartitionBookkeeper =
@@ -273,8 +283,11 @@ public class FlinkKafkaInternalProducer<K, V> implements Producer<K, V> {
 	private void flushNewPartitions() {
 		LOG.info("Flushing new partitions");
 		TransactionalRequestResult result = enqueueNewPartitions();
+		// 反射拿到sender线程
 		Object sender = getField(kafkaProducer, "sender");
+		// 调用wakeup方法
 		invoke(sender, "wakeup");
+		// 等待结果发送完毕
 		result.await();
 	}
 
@@ -293,6 +306,7 @@ public class FlinkKafkaInternalProducer<K, V> implements Producer<K, V> {
 			TransactionalRequestResult result;
 			if (newPartitionsInTransactionIsEmpty instanceof Boolean && !((Boolean) newPartitionsInTransactionIsEmpty)) {
 				Object txnRequestHandler = invoke(transactionManager, "addPartitionsToTransactionHandler");
+				// 调用入队请求方法
 				invoke(transactionManager, "enqueueRequest", new Class[]{txnRequestHandler.getClass().getSuperclass()}, new Object[]{txnRequestHandler});
 				result = (TransactionalRequestResult) getField(txnRequestHandler, txnRequestHandler.getClass().getSuperclass(), "result");
 			} else {

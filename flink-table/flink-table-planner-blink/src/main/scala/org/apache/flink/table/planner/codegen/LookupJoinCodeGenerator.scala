@@ -466,7 +466,7 @@ object LookupJoinCodeGenerator {
         .asInstanceOf[DataFormatConverter[RowData, Row]]
 
     override def collect(record: Row): Unit = {
-      val result = converter.toInternal(record)
+      val result: RowData = converter.toInternal(record)
       outputResult(result)
     }
   }

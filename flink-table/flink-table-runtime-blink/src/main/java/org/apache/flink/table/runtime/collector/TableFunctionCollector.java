@@ -29,8 +29,13 @@ public abstract class TableFunctionCollector<T> extends AbstractRichFunction imp
 
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * 输入数据
+	 */
 	private Object input;
+	// 收集器，用于收集记录
 	private Collector collector;
+	// 是否已经采集
 	private boolean collected;
 
 	/**
@@ -67,6 +72,7 @@ public abstract class TableFunctionCollector<T> extends AbstractRichFunction imp
 	}
 
 	/**
+	 * 将此UDTF的最终结果输出到下游。
 	 * Output final result of this UDTF to downstreams.
 	 */
 	@SuppressWarnings("unchecked")

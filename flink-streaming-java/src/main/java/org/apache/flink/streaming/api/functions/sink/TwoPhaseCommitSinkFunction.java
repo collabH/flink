@@ -63,8 +63,10 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.flink.util.Preconditions.checkState;
 
 /**
+ * 推荐的所有sinkFunction的基础类，为类实现exactly-once语义
  * This is a recommended base class for all of the {@link SinkFunction} that intend to implement exactly-once semantic.
  * It does that by implementing two phase commit algorithm on top of the {@link CheckpointedFunction} and
+ * 用户需要提供自定义的事务处理器
  * {@link CheckpointListener}. User should provide custom {@code TXN} (transaction handle) and implement abstract
  * methods handling this transaction handle.
  *
@@ -79,20 +81,21 @@ public abstract class TwoPhaseCommitSinkFunction<IN, TXN, CONTEXT>
 		implements CheckpointedFunction, CheckpointListener {
 
 	private static final Logger LOG = LoggerFactory.getLogger(TwoPhaseCommitSinkFunction.class);
-
+	// 等待提交的事务id
 	protected final LinkedHashMap<Long, TransactionHolder<TXN>> pendingCommitTransactions = new LinkedHashMap<>();
-
+	// 用户上下文
 	protected transient Optional<CONTEXT> userContext;
-
+	// 事务状态
 	protected transient ListState<State<TXN, CONTEXT>> state;
 
 	private final Clock clock;
 
 	private final ListStateDescriptor<State<TXN, CONTEXT>> stateDescriptor;
-
+	// 当前事务holder
 	private TransactionHolder<TXN> currentTransactionHolder;
 
 	/**
+	 * 事务超时时间，默认不超时
 	 * Specifies the maximum time a transaction should remain open.
 	 */
 	private long transactionTimeout = Long.MAX_VALUE;
@@ -286,6 +289,7 @@ public abstract class TwoPhaseCommitSinkFunction<IN, TXN, CONTEXT>
 
 			logWarningIfTimeoutAlmostReached(pendingTransaction);
 			try {
+				// 提交事务
 				commit(pendingTransaction.handle);
 			} catch (Throwable t) {
 				if (firstError == null) {
@@ -297,7 +301,7 @@ public abstract class TwoPhaseCommitSinkFunction<IN, TXN, CONTEXT>
 
 			pendingTransactionIterator.remove();
 		}
-
+		 // 提交事务失败抛出异常
 		if (firstError != null) {
 			throw new FlinkRuntimeException("Committing one of transactions failed, logging first encountered failure",
 				firstError);
@@ -317,15 +321,16 @@ public abstract class TwoPhaseCommitSinkFunction<IN, TXN, CONTEXT>
 
 		long checkpointId = context.getCheckpointId();
 		LOG.debug("{} - checkpoint {} triggered, flushing transaction '{}'", name(), context.getCheckpointId(), currentTransactionHolder);
-
+		// 第一次commit，与提交。
 		preCommit(currentTransactionHolder.handle);
 		pendingCommitTransactions.put(checkpointId, currentTransactionHolder);
 		LOG.debug("{} - stored pending transactions {}", name(), pendingCommitTransactions);
-
+		// 开启事务
 		currentTransactionHolder = beginTransactionInternal();
 		LOG.debug("{} - started new transaction '{}'", name(), currentTransactionHolder);
 
 		state.clear();
+		// 添加进状态
 		state.add(new State<>(
 			this.currentTransactionHolder,
 			new ArrayList<>(pendingCommitTransactions.values()),
@@ -359,13 +364,16 @@ public abstract class TwoPhaseCommitSinkFunction<IN, TXN, CONTEXT>
 				List<TXN> handledTransactions = new ArrayList<>(recoveredTransactions.size() + 1);
 				for (TransactionHolder<TXN> recoveredTransaction : recoveredTransactions) {
 					// If this fails to succeed eventually, there is actually data loss
+					// 提交恢复的事务
 					recoverAndCommitInternal(recoveredTransaction);
+					// 添加到handledTransactions中
 					handledTransactions.add(recoveredTransaction.handle);
 					LOG.info("{} committed recovered transaction {}", name(), recoveredTransaction);
 				}
 
 				{
 					TXN transaction = operatorState.getPendingTransaction().handle;
+					// 中断事务
 					recoverAndAbort(transaction);
 					handledTransactions.add(transaction);
 					LOG.info("{} aborted recovered transaction {}", name(), operatorState.getPendingTransaction());
@@ -407,8 +415,10 @@ public abstract class TwoPhaseCommitSinkFunction<IN, TXN, CONTEXT>
 		try {
 			logWarningIfTimeoutAlmostReached(transactionHolder);
 			recoverAndCommit(transactionHolder.handle);
+
 		} catch (final Exception e) {
 			final long elapsedTime = clock.millis() - transactionHolder.transactionStartTime;
+			// 超时异常是否抛出
 			if (ignoreFailuresAfterTransactionTimeout && elapsedTime > transactionTimeout) {
 				LOG.error("Error while committing transaction {}. " +
 						"Transaction has been open for longer than the transaction timeout ({})." +
@@ -493,6 +503,7 @@ public abstract class TwoPhaseCommitSinkFunction<IN, TXN, CONTEXT>
 	}
 
 	/**
+	 * 保存等待的事务/等待提交的事务/用户Context
 	 * State POJO class coupling pendingTransaction, context and pendingCommitTransactions.
 	 */
 	@VisibleForTesting
@@ -570,10 +581,11 @@ public abstract class TwoPhaseCommitSinkFunction<IN, TXN, CONTEXT>
 	@VisibleForTesting
 	@Internal
 	public static final class TransactionHolder<TXN> {
-
+		// 事务处理器
 		private final TXN handle;
 
 		/**
+		 * 事务开始处理时间，调用handle的系统时间
 		 * The system time when {@link #handle} was created.
 		 * Used to determine if the current transaction has exceeded its timeout specified by
 		 * {@link #transactionTimeout}.

@@ -38,9 +38,13 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  */
 @Internal
 public class TransactionalIdsGenerator {
+	// 事务id前缀
 	private final String prefix;
+	// 子任务index
 	private final int subtaskIndex;
+	// 总subTask个数
 	private final int totalNumberOfSubtasks;
+	// 池个数，空闲事务id的个数
 	private final int poolSize;
 	private final int safeScaleDownFactor;
 
@@ -74,6 +78,7 @@ public class TransactionalIdsGenerator {
 			long transactionalId = nextFreeTransactionalId + subtaskIndex * poolSize + i;
 			transactionalIds.add(generateTransactionalId(transactionalId));
 		}
+		// 返回空闲可以使用的事务id集合
 		return transactionalIds;
 	}
 
