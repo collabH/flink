@@ -670,7 +670,7 @@ public class CheckpointCoordinator {
 		synchronized (lock) {
 
 			pendingCheckpoints.put(checkpointID, checkpoint);
-
+			// 定时器，根据checkpointTimeout时间去运行CheckpointCanceller#run
 			ScheduledFuture<?> cancellerHandle = timer.schedule(
 				new CheckpointCanceller(checkpoint),
 				checkpointTimeout, TimeUnit.MILLISECONDS);

@@ -518,6 +518,7 @@ public class PendingCheckpoint {
 		synchronized (lock) {
 			try {
 				numAcknowledgedTasks = -1;
+				// 默认discarded为false
 				if (!discarded && releaseState) {
 					executor.execute(new Runnable() {
 						@Override
