@@ -239,6 +239,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 			}
 		};
 
+		// 根据状态描述符创建或者获取窗口状态
 		// create (or restore) the state that hold the actual window contents
 		// NOTE - the state may be null in the case of the overriding evicting window operator
 		if (windowStateDescriptor != null) {
@@ -476,19 +477,20 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 			mergingWindows = null;
 		}
 
+		// 触发窗口
 		TriggerResult triggerResult = triggerContext.onEventTime(timer.getTimestamp());
-
+		// 根据窗口trigger结果做出对应操作
+		// 输出结果
 		if (triggerResult.isFire()) {
 			ACC contents = windowState.get();
 			if (contents != null) {
 				emitWindowContents(triggerContext.window, contents);
 			}
 		}
-
+		// 清楚窗口内容
 		if (triggerResult.isPurge()) {
 			windowState.clear();
 		}
-
 		if (windowAssigner.isEventTime() && isCleanupTime(triggerContext.window, timer.getTimestamp())) {
 			clearAllState(triggerContext.window, windowState, mergingWindows);
 		}

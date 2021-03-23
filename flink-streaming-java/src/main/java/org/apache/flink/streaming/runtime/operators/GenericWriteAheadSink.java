@@ -55,6 +55,8 @@ import java.util.UUID;
  * checkpoint is completed.
  *
  * @param <IN> Type of the elements emitted by this sink
+ *
+ * 将一批需要写入的数据首先保存到state中，等需要checkpoint一次性写入，保证sink端为exactly-once
  */
 public abstract class GenericWriteAheadSink<IN> extends AbstractStreamOperator<IN>
 		implements OneInputStreamOperator<IN, IN> {
@@ -69,7 +71,7 @@ public abstract class GenericWriteAheadSink<IN> extends AbstractStreamOperator<I
 
 	private transient CheckpointStreamFactory.CheckpointStateOutputStream out;
 	private transient CheckpointStorageWorkerView checkpointStorage;
-
+	// 需要checkpoint的状态
 	private transient ListState<PendingCheckpoint> checkpointedState;
 
 	private final Set<PendingCheckpoint> pendingCheckpoints = new TreeSet<>();

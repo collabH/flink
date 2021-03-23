@@ -81,7 +81,7 @@ class StreamExecLegacySink[T](
           case _: RetractStreamTableSink[T] =>
             translateToTransformation(withChangeFlag = true, planner)
 
-          case upsertSink: UpsertStreamTableSink[T] =>
+          case upsertSink: UpseLookupArtStreamTableSink[T] =>
             // check for append only table
             val isAppendOnlyTable = ChangelogPlanUtils.inputInsertOnly(this)
             upsertSink.setIsAppendOnly(isAppendOnlyTable)

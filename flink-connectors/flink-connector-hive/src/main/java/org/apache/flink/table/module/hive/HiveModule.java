@@ -43,6 +43,7 @@ public class HiveModule implements Module {
 
 	// a set of functions that shouldn't be overridden by HiveModule
 	@VisibleForTesting
+	// flink内部支持的函数，黑名单过滤
 	static final Set<String> BUILT_IN_FUNC_BLACKLIST = Collections.unmodifiableSet(new HashSet<>(
 			Arrays.asList("count", "dense_rank", "first_value", "lag", "last_value", "lead", "rank", "row_number",
 					"hop", "hop_end", "hop_proctime", "hop_rowtime", "hop_start",
