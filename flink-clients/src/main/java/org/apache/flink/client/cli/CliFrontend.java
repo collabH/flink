@@ -972,23 +972,28 @@ public class CliFrontend {
 		EnvironmentInformation.logEnvironmentInfo(LOG, "Command Line Client", args);
 
 		// 1. find the configuration directory
+		// 获取flink-conf.yaml路径
 		final String configurationDirectory = getConfigurationDirectoryFromEnv();
 
 		// 2. load the global configuration
+		// 根据路径加载配置
 		final Configuration configuration = GlobalConfiguration.loadConfiguration(configurationDirectory);
 
 		// 3. load the custom command lines
+		// 加载自定义命令行，依次添加generic、yarn、default三种命令行客户端
 		final List<CustomCommandLine> customCommandLines = loadCustomCommandLines(
 			configuration,
 			configurationDirectory);
 
 		try {
+			// 创建CliFrontend
 			final CliFrontend cli = new CliFrontend(
 				configuration,
 				customCommandLines);
 
 			SecurityUtils.install(new SecurityConfiguration(cli.configuration));
 			int retCode = SecurityUtils.getInstalledContext()
+				// 根据参数启动允许对应的模式
 					.runSecured(() -> cli.parseParameters(args));
 			System.exit(retCode);
 		}
@@ -1005,6 +1010,7 @@ public class CliFrontend {
 	// --------------------------------------------------------------------------------------------
 
 	public static String getConfigurationDirectoryFromEnv() {
+		// 获取FLINK_CONF_DIR
 		String location = System.getenv(ConfigConstants.ENV_FLINK_CONF_DIR);
 
 		if (location != null) {
