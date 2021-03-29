@@ -195,6 +195,7 @@ public class PackagedProgram {
 	 * will be a local execution by default.
 	 */
 	public void invokeInteractiveModeForExecution() throws ProgramInvocationException {
+		// 调用user class main method
 		callMainMethod(mainClass, args);
 	}
 
@@ -285,6 +286,7 @@ public class PackagedProgram {
 		}
 
 		try {
+			// 执行用户代码
 			mainMethod.invoke(null, (Object) args);
 		} catch (IllegalArgumentException e) {
 			throw new ProgramInvocationException("Could not invoke the main method, arguments are not matching.", e);

@@ -149,6 +149,7 @@ public class DefaultDispatcherResourceManagerComponentFactory implements Dispatc
 					dispatcherGatewayRetriever,
 					executor);
 
+			// ui页面提交任务，dispatcher组件
 			webMonitorEndpoint = restEndpointFactory.createRestEndpoint(
 				configuration,
 				dispatcherGatewayRetriever,
@@ -164,6 +165,7 @@ public class DefaultDispatcherResourceManagerComponentFactory implements Dispatc
 
 			final String hostname = RpcUtils.getHostname(rpcService);
 
+			// 创建resourceManager
 			resourceManager = resourceManagerFactory.createResourceManager(
 				configuration,
 				ResourceID.generate(),
@@ -191,6 +193,7 @@ public class DefaultDispatcherResourceManagerComponentFactory implements Dispatc
 				metricRegistry.getMetricQueryServiceGatewayRpcAddress());
 
 			log.debug("Starting Dispatcher.");
+			// 创建dispatcherRunner
 			dispatcherRunner = dispatcherRunnerFactory.createDispatcherRunner(
 				highAvailabilityServices.getDispatcherLeaderElectionService(),
 				fatalErrorHandler,
@@ -200,6 +203,7 @@ public class DefaultDispatcherResourceManagerComponentFactory implements Dispatc
 				partialDispatcherServices);
 
 			log.debug("Starting ResourceManager.");
+			// 启动rm
 			resourceManager.start();
 
 			resourceManagerRetrievalService.start(resourceManagerGatewayRetriever);

@@ -207,7 +207,7 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
 		return SecurityUtils.getInstalledContext();
 	}
 
-	private void runCluster(Configuration configuration, PluginManager pluginManager) throws Exception {
+	private void  runCluster(Configuration configuration, PluginManager pluginManager) throws Exception {
 		synchronized (lock) {
 
 			initializeServices(configuration, pluginManager);

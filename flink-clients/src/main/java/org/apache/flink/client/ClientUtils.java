@@ -139,6 +139,7 @@ public enum ClientUtils {
 
 			LOG.info("Starting program (detached: {})", !configuration.getBoolean(DeploymentOptions.ATTACHED));
 
+			// 设置上下文执行换环境
 			ContextEnvironment.setAsContext(
 				executorServiceLoader,
 				configuration,
@@ -146,6 +147,7 @@ public enum ClientUtils {
 				enforceSingleJobExecution,
 				suppressSysout);
 
+			// 核心生成StreamExecutionEnvironment
 			StreamContextEnvironment.setAsContext(
 				executorServiceLoader,
 				configuration,

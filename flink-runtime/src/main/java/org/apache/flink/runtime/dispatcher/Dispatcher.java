@@ -193,6 +193,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	@Override
 	public void onStart() throws Exception {
 		try {
+			// 启动dispatcher服务
 			startDispatcherServices();
 		} catch (Exception e) {
 			final DispatcherException exception = new DispatcherException(String.format("Could not start the Dispatcher %s", getAddress()), e);

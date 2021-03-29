@@ -58,6 +58,7 @@ public class YarnClusterClientFactory extends AbstractContainerizedClusterClient
 				configuration.get(DeploymentOptionsInternal.CONF_DIR);
 		YarnLogConfigUtil.setLogConfigFileInConfig(configuration, configurationDirectory);
 
+		// 创建Yarn集群描述器
 		return getClusterDescriptor(configuration);
 	}
 
@@ -73,6 +74,7 @@ public class YarnClusterClientFactory extends AbstractContainerizedClusterClient
 		final YarnClient yarnClient = YarnClient.createYarnClient();
 		final YarnConfiguration yarnConfiguration = new YarnConfiguration();
 
+		// 这里和统一部署中心，Yarn Model一致
 		yarnClient.init(yarnConfiguration);
 		yarnClient.start();
 

@@ -66,6 +66,7 @@ public class AbstractJobClusterExecutor<ClusterID, ClientFactory extends Cluster
 		try (final ClusterDescriptor<ClusterID> clusterDescriptor = clusterClientFactory.createClusterDescriptor(configuration)) {
 			final ExecutionConfigAccessor configAccessor = ExecutionConfigAccessor.fromConfiguration(configuration);
 
+			// 将集群特有配置设置ClusterSpecification，tm、jm、slots
 			final ClusterSpecification clusterSpecification = clusterClientFactory.getClusterSpecification(configuration);
 
 			// 提交任务任务

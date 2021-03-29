@@ -217,11 +217,13 @@ public class CliFrontend {
 		final CustomCommandLine activeCommandLine =
 				validateAndGetActiveCommandLine(checkNotNull(commandLine));
 
+		// 创建只想参数
 		final ProgramOptions programOptions = ProgramOptions.create(commandLine);
 
 		final PackagedProgram program =
 				getPackagedProgram(programOptions);
 
+		// 获取用户jar包和依赖
 		final List<URL> jobJars = program.getJobJarAndDependencies();
 		final Configuration effectiveConfiguration = getEffectiveConfiguration(
 				activeCommandLine, commandLine, programOptions, jobJars);
