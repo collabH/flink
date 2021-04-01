@@ -307,29 +307,36 @@ public abstract class FileSystem {
 	public static void initialize(
 		Configuration config,
 		PluginManager pluginManager) throws IllegalConfigurationException {
-
+		// 加锁方式并发问题
 		LOCK.lock();
 		try {
 			// make sure file systems are re-instantiated after re-configuration
+			// 情况fileSystem换成和FileSystem工厂
 			CACHE.clear();
 			FS_FACTORIES.clear();
 
 			Collection<Supplier<Iterator<FileSystemFactory>>> factorySuppliers = new ArrayList<>(2);
+			// spi加载fs对象到factorySuppliers中
 			factorySuppliers.add(() -> ServiceLoader.load(FileSystemFactory.class).iterator());
 
+			// 加载plugin支持的fileSystem
 			if (pluginManager != null) {
 				factorySuppliers.add(() ->
 					Iterators.transform(pluginManager.load(FileSystemFactory.class), PluginFileSystemFactory::of));
 			}
-
+			//加载fileSystemFactory
 			final List<FileSystemFactory> fileSystemFactories = loadFileSystemFactories(factorySuppliers);
 
 			// configure all file system factories
 			for (FileSystemFactory factory : fileSystemFactories) {
+				// 注入配置
 				factory.configure(config);
+				// 获取factory scheme
 				String scheme = factory.getScheme();
 
+				// 创建限制文件系统
 				FileSystemFactory fsf = ConnectionLimitingFactory.decorateIfLimited(factory, scheme, config);
+				// 换成操作系统工厂
 				FS_FACTORIES.put(scheme, fsf);
 			}
 
@@ -1041,12 +1048,14 @@ public abstract class FileSystem {
 		final ArrayList<FileSystemFactory> list = new ArrayList<>();
 
 		// by default, we always have the local file system factory
+		// 默认添加本地文件系统工厂
 		list.add(new LocalFileSystemFactory());
 
 		LOG.debug("Loading extension file systems via services");
 
 		for (Supplier<Iterator<FileSystemFactory>> factoryIteratorsSupplier : factoryIteratorsSuppliers) {
 			try {
+				// 将工厂放入list
 				addAllFactoriesToList(factoryIteratorsSupplier.get(), list);
 			} catch (Throwable t) {
 				// catching Throwable here to handle various forms of class loading
@@ -1056,6 +1065,7 @@ public abstract class FileSystem {
 			}
 		}
 
+		// 包装不可变list
 		return Collections.unmodifiableList(list);
 	}
 

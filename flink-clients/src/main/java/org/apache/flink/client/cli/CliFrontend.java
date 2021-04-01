@@ -171,29 +171,35 @@ public class CliFrontend {
 
 	protected void runApplication(String[] args) throws Exception {
 		LOG.info("Running 'run-application' command.");
-
+		//获取公共允许参数
 		final Options commandOptions = CliFrontendParser.getRunCommandOptions();
+		// 参数+value解析成commandLine
 		final CommandLine commandLine = getCommandLine(commandOptions, args, true);
 
 		if (commandLine.hasOption(HELP_OPTION.getOpt())) {
 			CliFrontendParser.printHelpForRun(customCommandLines);
 			return;
 		}
-
+		//校验参数
 		final CustomCommandLine activeCommandLine =
 				validateAndGetActiveCommandLine(checkNotNull(commandLine));
-
+		// 获取程序阐述
 		final ProgramOptions programOptions = new ProgramOptions(commandLine);
 
+		// 穿件application-mode启动器
 		final ApplicationDeployer deployer =
 				new ApplicationClusterDeployer(clusterClientServiceLoader);
 
 		programOptions.validate();
+		// 获取jar包路径
 		final URI uri = PackagedProgramUtils.resolveURI(programOptions.getJarFilePath());
+		// 获取有效配置
 		final Configuration effectiveConfiguration = getEffectiveConfiguration(
 				activeCommandLine, commandLine, programOptions, Collections.singletonList(uri.toString()));
+		// 将应用mainClass和main#args设置如ApplicationConf中
 		final ApplicationConfiguration applicationConfiguration =
 				new ApplicationConfiguration(programOptions.getProgramArgs(), programOptions.getEntryPointClassName());
+		// 部署applicaion-mode作业
 		deployer.run(effectiveConfiguration, applicationConfiguration);
 	}
 
@@ -205,7 +211,9 @@ public class CliFrontend {
 	protected void run(String[] args) throws Exception {
 		LOG.info("Running 'run' command.");
 
+		// 获取flink run支持的公共参数
 		final Options commandOptions = CliFrontendParser.getRunCommandOptions();
+		// 生成对应的commandLine
 		final CommandLine commandLine = getCommandLine(commandOptions, args, true);
 
 		// evaluate help flag
@@ -214,23 +222,27 @@ public class CliFrontend {
 			return;
 		}
 
+		// 校验参数
 		final CustomCommandLine activeCommandLine =
 				validateAndGetActiveCommandLine(checkNotNull(commandLine));
 
-		// 创建只想参数
+		// 创建执行参数
 		final ProgramOptions programOptions = ProgramOptions.create(commandLine);
 
+		// 获取pacakge参数，包含jar、args、mainclass等
 		final PackagedProgram program =
 				getPackagedProgram(programOptions);
 
 		// 获取用户jar包和依赖
 		final List<URL> jobJars = program.getJobJarAndDependencies();
+		// 获取有效配置
 		final Configuration effectiveConfiguration = getEffectiveConfiguration(
 				activeCommandLine, commandLine, programOptions, jobJars);
 
 		LOG.debug("Effective executor configuration: {}", effectiveConfiguration);
 
 		try {
+			// 执行程序
 			executeProgram(effectiveConfiguration, program);
 		} finally {
 			program.deleteExtractedLibraries();
@@ -498,6 +510,7 @@ public class CliFrontend {
 				}
 				logAndSysout("Savepoint completed. Path: " + savepointPath);
 			});
+
 	}
 
 	/**
@@ -698,6 +711,7 @@ public class CliFrontend {
 	// --------------------------------------------------------------------------------------------
 
 	protected void executeProgram(final Configuration configuration, final PackagedProgram program) throws ProgramInvocationException {
+		// 执行参数
 		ClientUtils.executeProgram(new DefaultExecutorServiceLoader(), configuration, program, false, false);
 	}
 
@@ -915,23 +929,30 @@ public class CliFrontend {
 			// do action
 			switch (action) {
 				case ACTION_RUN:
+					// flink run
 					run(params);
 					return 0;
 				case ACTION_RUN_APPLICATION:
+					// flink run-application
 					runApplication(params);
 					return 0;
+					// flink list
 				case ACTION_LIST:
 					list(params);
 					return 0;
+					// flink info
 				case ACTION_INFO:
 					info(params);
 					return 0;
+					// flink cancel
 				case ACTION_CANCEL:
 					cancel(params);
 					return 0;
+					// flink stop
 				case ACTION_STOP:
 					stop(params);
 					return 0;
+					// flink savepoint
 				case ACTION_SAVEPOINT:
 					savepoint(params);
 					return 0;
@@ -978,7 +999,7 @@ public class CliFrontend {
 		final String configurationDirectory = getConfigurationDirectoryFromEnv();
 
 		// 2. load the global configuration
-		// 根据路径加载配置
+		// 根据路径加载配置，这里自定义flink-yarn部署器也走的这块逻辑
 		final Configuration configuration = GlobalConfiguration.loadConfiguration(configurationDirectory);
 
 		// 3. load the custom command lines
@@ -1053,10 +1074,12 @@ public class CliFrontend {
 
 	public static List<CustomCommandLine> loadCustomCommandLines(Configuration configuration, String configurationDirectory) {
 		List<CustomCommandLine> customCommandLines = new ArrayList<>();
+		// 添加通用的cli，主要包含-t、 -D参数指定
 		customCommandLines.add(new GenericCLI(configuration, configurationDirectory));
 
 		//	Command line interface of the YARN session, with a special initialization here
 		//	to prefix all options with y/yarn.
+		// flinkYarnSessionCli,指定flink yarn相关参数
 		final String flinkYarnSessionCLI = "org.apache.flink.yarn.cli.FlinkYarnSessionCli";
 		try {
 			customCommandLines.add(
@@ -1078,6 +1101,7 @@ public class CliFrontend {
 
 		//	Tips: DefaultCLI must be added at last, because getActiveCustomCommandLine(..) will get the
 		//	      active CustomCommandLine in order and DefaultCLI isActive always return true.
+		// 默认配置
 		customCommandLines.add(new DefaultCLI(configuration));
 
 		return customCommandLines;

@@ -50,12 +50,14 @@ public class GenericCLI implements CustomCommandLine {
 
 	private static final String ID = "Generic CLI";
 
+	// -e 过期
 	private final Option executorOption = new Option("e", "executor", true,
 			"DEPRECATED: Please use the -t option instead which is also available with the \"Application Mode\".\n" +
 					"The name of the executor to be used for executing the given job, which is equivalent " +
 					"to the \"" + DeploymentOptions.TARGET.key() + "\" config option. The " +
 					"currently available executors are: " + getExecutorFactoryNames() + ".");
 
+	// -t指定允许方式
 	private final Option targetOption = new Option("t", "target", true,
 			"The deployment target for the given application, which is equivalent " +
 					"to the \"" + DeploymentOptions.TARGET.key() + "\" config option. The " +
@@ -66,6 +68,7 @@ public class GenericCLI implements CustomCommandLine {
 	 * Dynamic properties allow the user to specify additional configuration values with -D, such as
 	 * <tt> -Dfs.overwrite-files=true  -Dtaskmanager.memory.network.min=536346624</tt>.
 	 */
+	// -D动态参数指定
 	private final Option dynamicProperties = Option.builder("D")
 			.argName("property=value")
 			.numberOfArgs(2)

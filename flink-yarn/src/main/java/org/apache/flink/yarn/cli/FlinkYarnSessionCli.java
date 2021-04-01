@@ -184,7 +184,9 @@ public class FlinkYarnSessionCli extends AbstractCustomCommandLine {
 
 		// Create the command line options
 
+		// -yq/yarnqueue
 		query = new Option(shortPrefix + "q", longPrefix + "query", false, "Display available YARN resources (memory, cores)");
+		// -yid/yarnapplicationId
 		applicationId = new Option(shortPrefix + "id", longPrefix + "applicationId", true, "Attach to running YARN session");
 		queue = new Option(shortPrefix + "qu", longPrefix + "queue", true, "Specify YARN queue.");
 		shipPath = new Option(shortPrefix + "t", longPrefix + "ship", true, "Ship files in the specified directory (t for transfer)");

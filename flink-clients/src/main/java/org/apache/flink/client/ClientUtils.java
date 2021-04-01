@@ -156,6 +156,7 @@ public enum ClientUtils {
 				suppressSysout);
 
 			try {
+				// 执行用户指定的mainClass的main方法
 				program.invokeInteractiveModeForExecution();
 			} finally {
 				ContextEnvironment.unsetAsContext();
