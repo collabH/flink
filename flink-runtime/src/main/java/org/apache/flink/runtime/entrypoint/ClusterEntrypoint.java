@@ -164,10 +164,14 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
 		LOG.info("Starting {}.", getClass().getSimpleName());
 
 		try {
+			// 替换优雅关闭
 			replaceGracefulExitWithHaltIfConfigured(configuration);
+			// 加载插件管理器
 			PluginManager pluginManager = PluginUtils.createPluginManagerFromRootFolder(configuration);
+			// 配置插件文件系统
 			configureFileSystems(configuration, pluginManager);
 
+			// 安全上下文
 			SecurityContext securityContext = installSecurityContext(configuration);
 
 			securityContext.runSecured((Callable<Void>) () -> {
@@ -210,14 +214,17 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
 	private void  runCluster(Configuration configuration, PluginManager pluginManager) throws Exception {
 		synchronized (lock) {
 
+			// 初始化rpc、ha相关服务
 			initializeServices(configuration, pluginManager);
 
 			// write host information into configuration
 			configuration.setString(JobManagerOptions.ADDRESS, commonRpcService.getAddress());
 			configuration.setInteger(JobManagerOptions.PORT, commonRpcService.getPort());
 
+			// 创建dispatcherResourceManagerFactory
 			final DispatcherResourceManagerComponentFactory dispatcherResourceManagerComponentFactory = createDispatcherResourceManagerComponentFactory(configuration);
 
+			// 创建DispatcherResourceManagerComponent
 			clusterComponent = dispatcherResourceManagerComponentFactory.create(
 				configuration,
 				ioExecutor,
@@ -230,6 +237,7 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
 				new RpcMetricQueryServiceRetriever(metricRegistry.getMetricQueryServiceRpcService()),
 				this);
 
+			// 添加钩子函数
 			clusterComponent.getShutDownFuture().whenComplete(
 				(ApplicationStatus applicationStatus, Throwable throwable) -> {
 					if (throwable != null) {

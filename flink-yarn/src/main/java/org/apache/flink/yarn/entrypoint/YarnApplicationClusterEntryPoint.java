@@ -69,7 +69,7 @@ public final class YarnApplicationClusterEntryPoint extends ApplicationClusterEn
 		JvmShutdownSafeguard.installAsShutdownHook(LOG);
 
 		Map<String, String> env = System.getenv();
-
+		// 获取工作目录
 		final String workingDirectory = env.get(ApplicationConstants.Environment.PWD.key());
 		Preconditions.checkArgument(
 				workingDirectory != null,
@@ -102,6 +102,7 @@ public final class YarnApplicationClusterEntryPoint extends ApplicationClusterEn
 		YarnApplicationClusterEntryPoint yarnApplicationClusterEntrypoint =
 				new YarnApplicationClusterEntryPoint(configuration, program);
 
+		// 运行集群入口
 		ClusterEntrypoint.runClusterEntrypoint(yarnApplicationClusterEntrypoint);
 	}
 
@@ -122,6 +123,7 @@ public final class YarnApplicationClusterEntryPoint extends ApplicationClusterEn
 			final String[] programArguments,
 			@Nullable final String jobClassName) throws IOException {
 
+		// 用户lib
 		final File userLibDir = YarnEntrypointUtils.getUsrLibDir(configuration).orElse(null);
 		final File userApplicationJar = getUserApplicationJar(userLibDir, configuration);
 		final ClassPathPackagedProgramRetriever.Builder retrieverBuilder =

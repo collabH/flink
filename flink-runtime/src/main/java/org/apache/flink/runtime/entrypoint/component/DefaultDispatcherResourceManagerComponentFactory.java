@@ -109,11 +109,14 @@ public class DefaultDispatcherResourceManagerComponentFactory implements Dispatc
 			ArchivedExecutionGraphStore archivedExecutionGraphStore,
 			MetricQueryServiceRetriever metricQueryServiceRetriever,
 			FatalErrorHandler fatalErrorHandler) throws Exception {
-
+		//dispatcher leader 恢复服务
 		LeaderRetrievalService dispatcherLeaderRetrievalService = null;
+		//rm leader 恢复服务
 		LeaderRetrievalService resourceManagerRetrievalService = null;
 		WebMonitorEndpoint<?> webMonitorEndpoint = null;
+		// rm
 		ResourceManager<?> resourceManager = null;
+		// dispatcher
 		DispatcherRunner dispatcherRunner = null;
 
 		try {
@@ -121,6 +124,7 @@ public class DefaultDispatcherResourceManagerComponentFactory implements Dispatc
 
 			resourceManagerRetrievalService = highAvailabilityServices.getResourceManagerLeaderRetriever();
 
+			// dispatcherGatewayRetriever
 			final LeaderGatewayRetriever<DispatcherGateway> dispatcherGatewayRetriever = new RpcGatewayRetriever<>(
 				rpcService,
 				DispatcherGateway.class,
@@ -128,6 +132,7 @@ public class DefaultDispatcherResourceManagerComponentFactory implements Dispatc
 				10,
 				Time.milliseconds(50L));
 
+			// resourceManagerGatewayRetriever
 			final LeaderGatewayRetriever<ResourceManagerGateway> resourceManagerGatewayRetriever = new RpcGatewayRetriever<>(
 				rpcService,
 				ResourceManagerGateway.class,
@@ -135,6 +140,7 @@ public class DefaultDispatcherResourceManagerComponentFactory implements Dispatc
 				10,
 				Time.milliseconds(50L));
 
+			// diospatcher rest端口
 			final ScheduledExecutorService executor = WebMonitorEndpoint.createExecutorService(
 				configuration.getInteger(RestOptions.SERVER_NUM_THREADS),
 				configuration.getInteger(RestOptions.SERVER_THREAD_PRIORITY),
@@ -205,10 +211,11 @@ public class DefaultDispatcherResourceManagerComponentFactory implements Dispatc
 			log.debug("Starting ResourceManager.");
 			// 启动rm
 			resourceManager.start();
-
+			// 启动rm、dispatcher
 			resourceManagerRetrievalService.start(resourceManagerGatewayRetriever);
 			dispatcherLeaderRetrievalService.start(dispatcherGatewayRetriever);
 
+			// 创建DispatcherResourceManagerComponent
 			return new DispatcherResourceManagerComponent(
 				dispatcherRunner,
 				resourceManager,

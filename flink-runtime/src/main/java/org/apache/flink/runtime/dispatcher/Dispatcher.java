@@ -106,11 +106,14 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	public static final String DISPATCHER_NAME = "dispatcher";
 
+	// flink任务配置
 	private final Configuration configuration;
 
+	// jobGraph写入器
 	private final JobGraphWriter jobGraphWriter;
 	private final RunningJobsRegistry runningJobsRegistry;
 
+	// 高科用服务
 	private final HighAvailabilityServices highAvailabilityServices;
 	private final GatewayRetriever<ResourceManagerGateway> resourceManagerGatewayRetriever;
 	private final JobManagerSharedServices jobManagerSharedServices;
@@ -206,6 +209,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	private void startDispatcherServices() throws Exception {
 		try {
+			// 注册dispatcher指标
 			registerDispatcherMetrics(jobManagerMetricGroup);
 		} catch (Exception e) {
 			handleStartDispatcherServicesException(e);
