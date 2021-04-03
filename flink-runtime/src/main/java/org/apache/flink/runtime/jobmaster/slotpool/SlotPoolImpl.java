@@ -102,9 +102,11 @@ public class SlotPoolImpl implements SlotPool {
 	private final HashSet<ResourceID> registeredTaskManagers;
 
 	/** The book-keeping of all allocated slots. */
+	// 已经申请的slot
 	private final AllocatedSlots allocatedSlots;
 
 	/** The book-keeping of all available slots. */
+	// 可用资源
 	private final AvailableSlots availableSlots;
 
 	/** All pending requests waiting for slots. */
@@ -875,21 +877,25 @@ public class SlotPoolImpl implements SlotPool {
 		// The timestamp in SlotAndTimestamp is relative
 		final long currentRelativeTimeMillis = clock.relativeTimeMillis();
 
+		// 过期slot
 		final List<AllocatedSlot> expiredSlots = new ArrayList<>(availableSlots.size());
 
 		for (SlotAndTimestamp slotAndTimestamp : availableSlots.availableSlots.values()) {
+			// 过滤过期slot
 			if (currentRelativeTimeMillis - slotAndTimestamp.timestamp > idleSlotTimeout.toMilliseconds()) {
 				expiredSlots.add(slotAndTimestamp.slot);
 			}
 		}
 
 		final FlinkException cause = new FlinkException("Releasing idle slot.");
-
+		// 处理过期slot
 		for (AllocatedSlot expiredSlot : expiredSlots) {
 			final AllocationID allocationID = expiredSlot.getAllocationId();
+			// 尝试移除
 			if (availableSlots.tryRemove(allocationID) != null) {
-
+				//处理移除正在使用的过期slot
 				log.info("Releasing idle slot [{}].", allocationID);
+				// 获取空闲slot
 				final CompletableFuture<Acknowledge> freeSlotFuture = expiredSlot.getTaskManagerGateway().freeSlot(
 					allocationID,
 					cause,
@@ -908,14 +914,19 @@ public class SlotPoolImpl implements SlotPool {
 			}
 		}
 
+		// 注册定时任务
 		scheduleRunAsync(this::checkIdleSlot, idleSlotTimeout);
 	}
 
+	/**
+	 * 校验一批slot是否超时
+	 */
 	protected void checkBatchSlotTimeout() {
 		if (!batchSlotRequestTimeoutCheckEnabled) {
 			return;
 		}
 
+		// 获取一批等待终的请求
 		final Collection<PendingRequest> pendingBatchRequests = getPendingBatchRequests();
 
 		if (!pendingBatchRequests.isEmpty()) {

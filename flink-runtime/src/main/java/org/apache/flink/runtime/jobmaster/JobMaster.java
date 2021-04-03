@@ -282,8 +282,10 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId> implements JobMast
 
 		log.info("Initializing job {} ({}).", jobName, jid);
 
+		// rm ha服务
 		resourceManagerLeaderRetriever = highAvailabilityServices.getResourceManagerLeaderRetriever();
 
+		// slotPool
 		this.slotPool = checkNotNull(slotPoolFactory).createSlotPool(jobGraph.getJobID());
 
 		this.scheduler = checkNotNull(schedulerFactory).createScheduler(slotPool);

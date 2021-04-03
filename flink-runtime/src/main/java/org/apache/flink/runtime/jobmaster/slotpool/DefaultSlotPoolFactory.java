@@ -59,6 +59,7 @@ public class DefaultSlotPoolFactory implements SlotPoolFactory {
 	@Override
 	@Nonnull
 	public SlotPool createSlotPool(@Nonnull JobID jobId) {
+		// 创建slot资源池
 		return new SlotPoolImpl(
 			jobId,
 			clock,
