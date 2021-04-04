@@ -29,6 +29,7 @@ import java.util.Objects;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
+ * 流图拓扑的边，一般为数据传输的管道
  * An edge in the streaming topology. One edge like this does not necessarily
  * gets converted to a connection between two job vertices (due to
  * chaining/optimization).
@@ -55,11 +56,13 @@ public class StreamEdge implements Serializable {
 	private final List<String> selectedNames;
 
 	/**
+	 * 用于side-output的tag
 	 * The side-output tag (if any) of this {@link StreamEdge}.
 	 */
 	private final OutputTag outputTag;
 
 	/**
+	 * 输出端分区器
 	 * The {@link StreamPartitioner} on this {@link StreamEdge}.
 	 */
 	private StreamPartitioner<?> outputPartitioner;
@@ -74,6 +77,9 @@ public class StreamEdge implements Serializable {
 	 */
 	private final String targetOperatorName;
 
+	/**
+	 * shuffle模式
+	 */
 	private final ShuffleMode shuffleMode;
 
 	public StreamEdge(StreamNode sourceVertex, StreamNode targetVertex, int typeNumber,

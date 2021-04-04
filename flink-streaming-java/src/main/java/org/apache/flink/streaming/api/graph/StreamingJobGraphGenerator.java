@@ -90,6 +90,7 @@ import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkState;
 
 /**
+ * 将StreamGraph转换成JobGraph，主要包含StreamNode转换JobVertex，StreamEdge转换JobEdge，JobEdge和JobVertex间创建IntermediaDataSet
  * The StreamingJobGraphGenerator converts a {@link StreamGraph} into a {@link JobGraph}.
  */
 @Internal
@@ -113,6 +114,7 @@ public class StreamingJobGraphGenerator {
 
 	private final StreamGraph streamGraph;
 
+	// jobVertex
 	private final Map<Integer, JobVertex> jobVertices;
 	private final JobGraph jobGraph;
 	private final Collection<Integer> builtVertices;
@@ -166,6 +168,7 @@ public class StreamingJobGraphGenerator {
 			legacyHashes.add(hasher.traverseStreamGraphAndGenerateHashes(streamGraph));
 		}
 
+		// 设置chaining优化，将StreamNode转换为JobVertex
 		setChaining(hashes, legacyHashes);
 
 		setPhysicalEdges();
@@ -201,6 +204,7 @@ public class StreamingJobGraphGenerator {
 	private void preValidate() {
 		CheckpointConfig checkpointConfig = streamGraph.getCheckpointConfig();
 
+		// 校验checkpint算子校验
 		if (checkpointConfig.isCheckpointingEnabled()) {
 			// temporarily forbid checkpointing for iterative jobs
 			if (streamGraph.isIterative() && !checkpointConfig.isForceCheckpointing()) {
@@ -242,6 +246,7 @@ public class StreamingJobGraphGenerator {
 			inEdges.add(edge);
 		}
 
+		//将streamEdge维护起来
 		for (Map.Entry<Integer, List<StreamEdge>> inEdges : physicalInEdgesInOrder.entrySet()) {
 			int vertex = inEdges.getKey();
 			List<StreamEdge> edgeList = inEdges.getValue();
@@ -257,6 +262,7 @@ public class StreamingJobGraphGenerator {
 	 */
 	private void setChaining(Map<Integer, byte[]> hashes, List<Map<Integer, byte[]>> legacyHashes) {
 		for (Integer sourceNodeId : streamGraph.getSourceIDs()) {
+			// 创建chain
 			createChain(
 					sourceNodeId,
 					0,
@@ -276,6 +282,7 @@ public class StreamingJobGraphGenerator {
 			StreamNode currentNode = streamGraph.getStreamNode(currentNodeId);
 
 			for (StreamEdge outEdge : currentNode.getOutEdges()) {
+				// 当前节点的输出边是否可以chain
 				if (isChainable(outEdge, streamGraph)) {
 					chainableOutputs.add(outEdge);
 				} else {
@@ -619,9 +626,11 @@ public class StreamingJobGraphGenerator {
 	}
 
 	public static boolean isChainable(StreamEdge edge, StreamGraph streamGraph) {
+		// 获取上下游StreamNode
 		StreamNode upStreamVertex = streamGraph.getSourceVertex(edge);
 		StreamNode downStreamVertex = streamGraph.getTargetVertex(edge);
 
+		// 下游输入为1，上游和下游相同slot，上游和下游算子连优化开启，输出端边是forward，shuffle模式不是batch，并行度相同，开启chaining优化
 		return downStreamVertex.getInEdges().size() == 1
 				&& upStreamVertex.isSameSlotSharingGroup(downStreamVertex)
 				&& areOperatorsChainable(upStreamVertex, downStreamVertex, streamGraph)

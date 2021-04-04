@@ -92,6 +92,7 @@ public class StreamGraph implements Pipeline {
 
 	private ScheduleMode scheduleMode;
 
+	// 是否开启chain优化
 	private boolean chaining;
 
 	private Collection<Tuple2<String, DistributedCache.DistributedCacheEntry>> userArtifacts;
@@ -294,6 +295,19 @@ public class StreamGraph implements Pipeline {
 				outTypeInfo, operatorName, invokableClass);
 	}
 
+	/**
+	 * 添加操作算子，相当于StreamNode
+	 * @param vertexID
+	 * @param slotSharingGroup
+	 * @param coLocationGroup
+	 * @param operatorFactory
+	 * @param inTypeInfo
+	 * @param outTypeInfo
+	 * @param operatorName
+	 * @param invokableClass
+	 * @param <IN>
+	 * @param <OUT>
+	 */
 	private <IN, OUT> void addOperator(
 			Integer vertexID,
 			@Nullable String slotSharingGroup,
@@ -304,14 +318,18 @@ public class StreamGraph implements Pipeline {
 			String operatorName,
 			Class<? extends AbstractInvokable> invokableClass) {
 
+		// 添加StreamNode
 		addNode(vertexID, slotSharingGroup, coLocationGroup, invokableClass, operatorFactory, operatorName);
+		// 设置序列化器
 		setSerializers(vertexID, createSerializer(inTypeInfo), null, createSerializer(outTypeInfo));
 
+		// 设置output类型
 		if (operatorFactory.isOutputTypeConfigurable() && outTypeInfo != null) {
 			// sets the output type which must be know at StreamGraph creation time
 			operatorFactory.setOutputType(outTypeInfo, executionConfig);
 		}
 
+		// 设置input类型
 		if (operatorFactory.isInputTypeConfigurable()) {
 			operatorFactory.setInputType(inTypeInfo, executionConfig);
 		}
@@ -382,10 +400,12 @@ public class StreamGraph implements Pipeline {
 			StreamOperatorFactory<?> operatorFactory,
 			String operatorName) {
 
+		// 是否重复
 		if (streamNodes.containsKey(vertexID)) {
 			throw new RuntimeException("Duplicate vertexID " + vertexID);
 		}
 
+		// 创建算子StreamNode
 		StreamNode vertex = new StreamNode(
 				vertexID,
 				slotSharingGroup,
@@ -500,6 +520,12 @@ public class StreamGraph implements Pipeline {
 		}
 	}
 
+	/**
+	 * 添加边
+	 * @param upStreamVertexID
+	 * @param downStreamVertexID
+	 * @param typeNumber
+	 */
 	public void addEdge(Integer upStreamVertexID, Integer downStreamVertexID, int typeNumber) {
 		addEdgeInternal(upStreamVertexID,
 				downStreamVertexID,

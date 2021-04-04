@@ -44,6 +44,7 @@ import java.util.Optional;
 import static org.apache.flink.util.Preconditions.checkArgument;
 
 /**
+ * 描述程序的一个operator
  * Class representing the operators in the streaming programs, with all their properties.
  */
 @Internal
@@ -73,9 +74,12 @@ public class StreamNode implements Serializable {
 	private TypeSerializer<?>[] typeSerializersIn = new TypeSerializer[0];
 	private TypeSerializer<?> typeSerializerOut;
 
+	// 上游边
 	private List<StreamEdge> inEdges = new ArrayList<StreamEdge>();
+	// 下游边
 	private List<StreamEdge> outEdges = new ArrayList<StreamEdge>();
 
+	// jobGraph operator
 	private final Class<? extends AbstractInvokable> jobVertexClass;
 
 	private InputFormat<?, ?> inputFormat;
@@ -110,14 +114,20 @@ public class StreamNode implements Serializable {
 		this.operatorFactory = operatorFactory;
 		this.outputSelectors = outputSelector;
 		this.jobVertexClass = jobVertexClass;
+		// 共享slot组
 		this.slotSharingGroup = slotSharingGroup;
 		this.coLocationGroup = coLocationGroup;
 	}
 
+	/**
+	 * 添加上游边
+	 * @param inEdge
+	 */
 	public void addInEdge(StreamEdge inEdge) {
 		if (inEdge.getTargetId() != getId()) {
 			throw new IllegalArgumentException("Destination id doesn't match the StreamNode id");
 		} else {
+			// 添加集合
 			inEdges.add(inEdge);
 		}
 	}

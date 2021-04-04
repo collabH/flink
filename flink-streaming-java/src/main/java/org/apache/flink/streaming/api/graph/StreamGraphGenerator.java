@@ -65,6 +65,7 @@ import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
+ * StreamGraph生成器，将用户程序转换成StreamGraph
  * A generator that generates a {@link StreamGraph} from a graph of
  * {@link Transformation}s.
  *
@@ -202,7 +203,9 @@ public class StreamGraphGenerator {
 	 * @return
 	 */
 	public StreamGraph generate() {
+		// 创建StreamGraph
 		streamGraph = new StreamGraph(executionConfig, checkpointConfig, savepointRestoreSettings);
+		// 设置相关属性配置
 		streamGraph.setStateBackend(stateBackend);
 		streamGraph.setChaining(chaining);
 		streamGraph.setScheduleMode(scheduleMode);
@@ -255,6 +258,7 @@ public class StreamGraphGenerator {
 		transform.getOutputType();
 
 		Collection<Integer> transformedIds;
+		// 算子转换成StreamNode，并且为对应StreamNode生成StreamEdge
 		if (transform instanceof OneInputTransformation<?, ?>) {
 			transformedIds = transformOneInputTransform((OneInputTransformation<?, ?>) transform);
 		} else if (transform instanceof TwoInputTransformation<?, ?, ?>) {
@@ -685,6 +689,7 @@ public class StreamGraphGenerator {
 		// 共享slot
 		String slotSharingGroup = determineSlotSharingGroup(transform.getSlotSharingGroup(), inputIds);
 
+		// 创建StreamNode
 		streamGraph.addOperator(transform.getId(),
 				slotSharingGroup,
 				transform.getCoLocationGroupKey(),
@@ -705,6 +710,7 @@ public class StreamGraphGenerator {
 
 		for (Integer inputId: inputIds) {
 			// 上游vertexID和下游vertexID构造streamGraph
+			// 添加Stream上下游边
 			streamGraph.addEdge(inputId, transform.getId(), 0);
 		}
 
