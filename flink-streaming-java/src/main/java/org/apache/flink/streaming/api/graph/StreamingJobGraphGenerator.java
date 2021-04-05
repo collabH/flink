@@ -271,14 +271,19 @@ public class StreamingJobGraphGenerator {
 	}
 
 	private List<StreamEdge> createChain(Integer currentNodeId, int chainIndex, OperatorChainInfo chainInfo) {
+		// 开始的node id
 		Integer startNodeId = chainInfo.getStartNodeId();
 		if (!builtVertices.contains(startNodeId)) {
 
+			// 包含可chain和不可chain的集合
 			List<StreamEdge> transitiveOutEdges = new ArrayList<StreamEdge>();
 
+			// 记录可以chain的边
 			List<StreamEdge> chainableOutputs = new ArrayList<StreamEdge>();
+			// 记录不可以chain的边
 			List<StreamEdge> nonChainableOutputs = new ArrayList<StreamEdge>();
 
+			// 获取当前的算子node
 			StreamNode currentNode = streamGraph.getStreamNode(currentNodeId);
 
 			for (StreamEdge outEdge : currentNode.getOutEdges()) {
@@ -290,7 +295,9 @@ public class StreamingJobGraphGenerator {
 				}
 			}
 
+			// 处理出边
 			for (StreamEdge chainable : chainableOutputs) {
+				// 将每个出边进行处理
 				transitiveOutEdges.addAll(
 						createChain(chainable.getTargetId(), chainIndex + 1, chainInfo));
 			}
@@ -314,8 +321,10 @@ public class StreamingJobGraphGenerator {
 				getOrCreateFormatContainer(startNodeId).addOutputFormat(currentOperatorId, currentNode.getOutputFormat());
 			}
 
+			// 如果是起始节点创建jobVertex
 			StreamConfig config = currentNodeId.equals(startNodeId)
 					? createJobVertex(startNodeId, chainInfo)
+				// 如果不是创建StreamConfig，记录jobVertex
 					: new StreamConfig(new Configuration());
 
 			setVertexConfig(currentNodeId, config, chainableOutputs, nonChainableOutputs);
@@ -329,6 +338,7 @@ public class StreamingJobGraphGenerator {
 				config.setOutEdges(streamGraph.getStreamNode(currentNodeId).getOutEdges());
 
 				for (StreamEdge edge : transitiveOutEdges) {
+					// StreamEdge转换JobEdge，并且创建中间结果集
 					connect(startNodeId, edge);
 				}
 
@@ -578,6 +588,7 @@ public class StreamingJobGraphGenerator {
 		}
 
 		JobEdge jobEdge;
+		// 上下游JobVertex转换jobEdge和生成jobEdge和JobVertex的interalmediaDataSet
 		if (isPointwisePartitioner(partitioner)) {
 			jobEdge = downStreamVertex.connectNewDataSetAsInput(
 				headVertex,

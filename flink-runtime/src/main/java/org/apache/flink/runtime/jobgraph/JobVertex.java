@@ -468,10 +468,12 @@ public class JobVertex implements java.io.Serializable {
 			DistributionPattern distPattern,
 			ResultPartitionType partitionType) {
 
+		// 创建中间结果集
 		IntermediateDataSet dataSet = input.createAndAddResultDataSet(partitionType);
 
 		JobEdge edge = new JobEdge(dataSet, this, distPattern);
 		this.inputs.add(edge);
+		// 添加中间结果消费者
 		dataSet.addConsumer(edge);
 		return edge;
 	}
