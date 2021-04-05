@@ -126,6 +126,31 @@ public class ExecutionGraphBuilder {
 			(execution, newState) -> {});
 	}
 
+	/**
+	 * 将jobGraph转换为ExecutionGraph
+	 * @param prior
+	 * @param jobGraph
+	 * @param jobManagerConfig
+	 * @param futureExecutor
+	 * @param ioExecutor
+	 * @param slotProvider
+	 * @param classLoader
+	 * @param recoveryFactory
+	 * @param rpcTimeout
+	 * @param restartStrategy
+	 * @param metrics
+	 * @param blobWriter
+	 * @param allocationTimeout
+	 * @param log
+	 * @param shuffleMaster
+	 * @param partitionTracker
+	 * @param failoverStrategyFactory
+	 * @param executionDeploymentListener
+	 * @param executionStateUpdateListener
+	 * @return
+	 * @throws JobExecutionException
+	 * @throws JobException
+	 */
 	public static ExecutionGraph buildGraph(
 		@Nullable ExecutionGraph prior,
 		JobGraph jobGraph,
@@ -169,6 +194,7 @@ public class ExecutionGraphBuilder {
 		// create a new execution graph, if none exists so far
 		final ExecutionGraph executionGraph;
 		try {
+			// 如果存在则复用，否则新创建
 			executionGraph = (prior != null) ? prior :
 				new ExecutionGraph(
 					jobInformation,
@@ -233,6 +259,7 @@ public class ExecutionGraphBuilder {
 		if (log.isDebugEnabled()) {
 			log.debug("Adding {} vertices from job graph {} ({}).", sortedTopology.size(), jobName, jobId);
 		}
+		// 将jobVertex转换为并行的ExecutionJobVertex
 		executionGraph.attachJobGraph(sortedTopology);
 
 		if (log.isDebugEnabled()) {

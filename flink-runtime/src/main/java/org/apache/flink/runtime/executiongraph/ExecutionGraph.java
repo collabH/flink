@@ -800,6 +800,7 @@ public class ExecutionGraph implements AccessExecutionGraph {
 	//  Actions
 	// --------------------------------------------------------------------------------------------
 
+	// 转换jobVertex为并行版本executionJobVertex
 	public void attachJobGraph(List<JobVertex> topologiallySorted) throws JobException {
 
 		assertRunningInJobMasterMainThread();
@@ -815,11 +816,13 @@ public class ExecutionGraph implements AccessExecutionGraph {
 
 		for (JobVertex jobVertex : topologiallySorted) {
 
+			// 如果数据源是输入算子或者已经停止则设置其状态为stop
 			if (jobVertex.isInputVertex() && !jobVertex.isStoppable()) {
 				this.isStoppable = false;
 			}
 
 			// create the execution job vertex and attach it to the graph
+			// 创建ExecutionJobVertex
 			ExecutionJobVertex ejv = new ExecutionJobVertex(
 					this,
 					jobVertex,
@@ -837,6 +840,7 @@ public class ExecutionGraph implements AccessExecutionGraph {
 					jobVertex.getID(), ejv, previousTask));
 			}
 
+			// 内存存储中间结果集
 			for (IntermediateResult res : ejv.getProducedDataSets()) {
 				IntermediateResult previousDataSet = this.intermediateResults.putIfAbsent(res.getId(), res);
 				if (previousDataSet != null) {
