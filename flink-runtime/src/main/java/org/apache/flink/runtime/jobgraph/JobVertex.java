@@ -42,6 +42,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * The base class for job vertexes.
+ * opeartor-》streamNode-》jobVertex
  */
 public class JobVertex implements java.io.Serializable {
 
@@ -82,6 +83,7 @@ public class JobVertex implements java.io.Serializable {
 	private int maxParallelism = -1;
 
 	/** The minimum resource of the vertex. */
+	// 默认为null
 	private ResourceSpec minResources = ResourceSpec.DEFAULT;
 
 	/** The preferred resource of the vertex. */
@@ -103,6 +105,7 @@ public class JobVertex implements java.io.Serializable {
 	private String name;
 
 	/** Optionally, a sharing group that allows subtasks from different job vertices to run concurrently in one slot. */
+	// slotShare group
 	private SlotSharingGroup slotSharingGroup;
 
 	/** The group inside which the vertex subtasks share slots. */
@@ -456,6 +459,12 @@ public class JobVertex implements java.io.Serializable {
 		return result;
 	}
 
+	/**
+	 * 添加中间结果集消费者 也就是jobedge
+	 * @param dataSet
+	 * @param distPattern
+	 * @return
+	 */
 	public JobEdge connectDataSetAsInput(IntermediateDataSet dataSet, DistributionPattern distPattern) {
 		JobEdge edge = new JobEdge(dataSet, this, distPattern);
 		this.inputs.add(edge);
