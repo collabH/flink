@@ -173,6 +173,7 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
 	protected void startSchedulingInternal() {
 		log.info("Starting scheduling with scheduling strategy [{}]", schedulingStrategy.getClass().getName());
 		prepareExecutionGraphForNgScheduling();
+		//默认调度侧拉为PipelineRegion
 		schedulingStrategy.startScheduling();
 	}
 
@@ -299,9 +300,11 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
 	public void allocateSlotsAndDeploy(final List<ExecutionVertexDeploymentOption> executionVertexDeploymentOptions) {
 		validateDeploymentOptions(executionVertexDeploymentOptions);
 
+		// vertex部署参数
 		final Map<ExecutionVertexID, ExecutionVertexDeploymentOption> deploymentOptionsByVertex =
 			groupDeploymentOptionsByVertexId(executionVertexDeploymentOptions);
 
+		// 需要部署的vertexs
 		final List<ExecutionVertexID> verticesToDeploy = executionVertexDeploymentOptions.stream()
 			.map(ExecutionVertexDeploymentOption::getExecutionVertexId)
 			.collect(Collectors.toList());
@@ -309,11 +312,14 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
 		final Map<ExecutionVertexID, ExecutionVertexVersion> requiredVersionByVertex =
 			executionVertexVersioner.recordVertexModifications(verticesToDeploy);
 
+		// 过滤需要调度的vertex
 		transitionToScheduled(verticesToDeploy);
 
+		// 申请slot
 		final List<SlotExecutionVertexAssignment> slotExecutionVertexAssignments =
 			allocateSlots(executionVertexDeploymentOptions);
 
+		// 创建部署处理器
 		final List<DeploymentHandle> deploymentHandles = createDeploymentHandles(
 			requiredVersionByVertex,
 			deploymentOptionsByVertex,
@@ -365,6 +371,7 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
 	}
 
 	private void waitForAllSlotsAndDeploy(final List<DeploymentHandle> deploymentHandles) {
+		// 部署全部slot
 		FutureUtils.assertNoException(
 			assignAllResources(deploymentHandles).handle(deployAll(deploymentHandles)));
 	}
@@ -470,6 +477,7 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
 
 	private void deployTaskSafe(final ExecutionVertexID executionVertexId) {
 		try {
+			// 获取每个算子单独的并行度
 			final ExecutionVertex executionVertex = getExecutionVertex(executionVertexId);
 			executionVertexOperations.deploy(executionVertex);
 		} catch (Throwable e) {

@@ -113,6 +113,7 @@ public class PipelinedRegionSchedulingStrategy implements SchedulingStrategy {
 	}
 
 	private void maybeScheduleRegions(final Set<SchedulingPipelinedRegion> regions) {
+		// 分region
 		final List<SchedulingPipelinedRegion> regionsSorted =
 			SchedulingStrategyUtils.sortPipelinedRegionsInTopologicalOrder(schedulingTopology, regions);
 		for (SchedulingPipelinedRegion region : regionsSorted) {
@@ -135,6 +136,7 @@ public class PipelinedRegionSchedulingStrategy implements SchedulingStrategy {
 				schedulingTopology,
 				verticesToSchedule,
 				id -> deploymentOption);
+		//申请slot并且部署
 		schedulerOperations.allocateSlotsAndDeploy(vertexDeploymentOptions);
 	}
 

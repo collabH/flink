@@ -549,6 +549,9 @@ public class Task implements Runnable, TaskSlotPayload, TaskActions, PartitionPr
 		}
 	}
 
+	/**
+	 * 任务核心执行逻辑
+	 */
 	private void doRun() {
 		// ----------------------------
 		//  Initial State transition
@@ -662,6 +665,7 @@ public class Task implements Runnable, TaskSlotPayload, TaskActions, PartitionPr
 
 			TaskKvStateRegistry kvStateRegistry = kvStateService.createKvStateTaskRegistry(jobId, getJobVertexId());
 
+			// 创建运行环境
 			Environment env = new RuntimeEnvironment(
 				jobId,
 				vertexId,
@@ -696,6 +700,7 @@ public class Task implements Runnable, TaskSlotPayload, TaskActions, PartitionPr
 			executingThread.setContextClassLoader(userCodeClassLoader);
 
 			// now load and instantiate the task's invokable code
+			// 反射生成driver invokable
 			invokable = loadAndInstantiateInvokable(userCodeClassLoader, nameOfInvokableClass, env);
 
 			// ----------------------------------------------------------------
@@ -718,6 +723,7 @@ public class Task implements Runnable, TaskSlotPayload, TaskActions, PartitionPr
 			executingThread.setContextClassLoader(userCodeClassLoader);
 
 			// run the invokable
+			// 运行task driver类
 			invokable.invoke();
 
 			// make sure, we enter the catch block if the task leaves the invoke() method due

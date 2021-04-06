@@ -157,7 +157,9 @@ public class OneInputStreamTask<IN, OUT> extends StreamTask<OUT, OneInputStreamO
 		@Override
 		public void emitRecord(StreamRecord<IN> record) throws Exception {
 			numRecordsIn.inc();
+			// 设置流上下文
 			operator.setKeyContextElement1(record);
+			// 调用对应算子udf
 			operator.processElement(record);
 		}
 
