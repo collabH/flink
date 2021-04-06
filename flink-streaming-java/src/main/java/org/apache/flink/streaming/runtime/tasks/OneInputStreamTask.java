@@ -159,7 +159,7 @@ public class OneInputStreamTask<IN, OUT> extends StreamTask<OUT, OneInputStreamO
 			numRecordsIn.inc();
 			// 设置流上下文
 			operator.setKeyContextElement1(record);
-			// 调用对应算子udf
+			// SchedulerNG调用对应算子udf
 			operator.processElement(record);
 		}
 
