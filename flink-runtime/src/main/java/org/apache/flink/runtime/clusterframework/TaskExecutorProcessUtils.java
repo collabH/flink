@@ -111,10 +111,11 @@ public class TaskExecutorProcessUtils {
 
 	public static TaskExecutorProcessSpec processSpecFromWorkerResourceSpec(
 		final Configuration config, final WorkerResourceSpec workerResourceSpec) {
-
+		// 获取框架堆内/外内存
 		final MemorySize frameworkHeapMemorySize = TaskExecutorFlinkMemoryUtils.getFrameworkHeapMemorySize(config);
 		final MemorySize frameworkOffHeapMemorySize = TaskExecutorFlinkMemoryUtils.getFrameworkOffHeapMemorySize(config);
 
+		// flink内存包含如下
 		final TaskExecutorFlinkMemory flinkMemory = new TaskExecutorFlinkMemory(
 			frameworkHeapMemorySize,
 			frameworkOffHeapMemorySize,
