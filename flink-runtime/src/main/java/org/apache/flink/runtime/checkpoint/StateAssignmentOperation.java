@@ -82,6 +82,7 @@ public class StateAssignmentOperation {
 	public void assignStates() {
 		Map<OperatorID, OperatorState> localOperators = new HashMap<>(operatorStates);
 
+		// 校验状态相关信息
 		checkStateMappingCompleteness(allowNonRestoredState, operatorStates, tasks);
 
 		for (ExecutionJobVertex executionJobVertex : this.tasks) {
@@ -93,8 +94,10 @@ public class StateAssignmentOperation {
 			for (OperatorIDPair operatorIDPair : operatorIDPairs) {
 				OperatorID operatorID = operatorIDPair.getUserDefinedOperatorID().orElse(operatorIDPair.getGeneratedOperatorID());
 
+				// 从本地算子状态从移除
 				OperatorState operatorState = localOperators.remove(operatorID);
 				if (operatorState == null) {
+					// 创建算子状态
 					operatorState = new OperatorState(
 						operatorID,
 						executionJobVertex.getParallelism(),
@@ -120,6 +123,7 @@ public class StateAssignmentOperation {
 
 		int newParallelism = executionJobVertex.getParallelism();
 
+		//根据最大并行度和算子并行度穿件key分组范围
 		List<KeyGroupRange> keyGroupPartitions = createKeyGroupPartitions(
 			executionJobVertex.getMaxParallelism(),
 			newParallelism);
@@ -554,6 +558,7 @@ public class StateAssignmentOperation {
 		Set<OperatorID> allOperatorIDs = new HashSet<>();
 		for (ExecutionJobVertex executionJobVertex : tasks) {
 			for (OperatorIDPair operatorIDPair : executionJobVertex.getOperatorIDs()) {
+				// 记录全部算子id
 				allOperatorIDs.add(operatorIDPair.getGeneratedOperatorID());
 				operatorIDPair.getUserDefinedOperatorID().ifPresent(allOperatorIDs::add);
 			}
@@ -562,6 +567,7 @@ public class StateAssignmentOperation {
 			OperatorState operatorState = operatorGroupStateEntry.getValue();
 			//----------------------------------------find operator for state---------------------------------------------
 
+			// 判断算子状态是否包含
 			if (!allOperatorIDs.contains(operatorGroupStateEntry.getKey())) {
 				if (allowNonRestoredState) {
 					LOG.info("Skipped checkpoint state for operator {}.", operatorState.getOperatorID());

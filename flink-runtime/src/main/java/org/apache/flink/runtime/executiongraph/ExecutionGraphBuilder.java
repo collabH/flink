@@ -269,6 +269,7 @@ public class ExecutionGraphBuilder {
 		// configure the state checkpointing
 		JobCheckpointingSettings snapshotSettings = jobGraph.getCheckpointingSettings();
 		if (snapshotSettings != null) {
+			// jobVertex转换
 			List<ExecutionJobVertex> triggerVertices =
 					idToVertex(snapshotSettings.getVerticesToTrigger(), executionGraph);
 
@@ -295,6 +296,7 @@ public class ExecutionGraphBuilder {
 					maxNumberOfCheckpointsToRetain = CheckpointingOptions.MAX_RETAINED_CHECKPOINTS.defaultValue();
 				}
 
+				// 创建完成的checkpoint
 				completedCheckpoints = recoveryFactory.createCheckpointStore(jobId, maxNumberOfCheckpointsToRetain, classLoader);
 				checkpointIdCounter = recoveryFactory.createCheckpointIDCounter(jobId);
 			}
@@ -305,6 +307,7 @@ public class ExecutionGraphBuilder {
 			// Maximum number of remembered checkpoints
 			int historySize = jobManagerConfig.getInteger(WebOptions.CHECKPOINTS_HISTORY_SIZE);
 
+			// 创建checkpoint状态跟踪器
 			CheckpointStatsTracker checkpointStatsTracker = new CheckpointStatsTracker(
 					historySize,
 					ackVertices,
@@ -368,8 +371,10 @@ public class ExecutionGraphBuilder {
 				}
 			}
 
+			// 创建CheckpointCoordinatorConfiguration
 			final CheckpointCoordinatorConfiguration chkConfig = snapshotSettings.getCheckpointCoordinatorConfiguration();
 
+			// 开启executionGraph checkpoint
 			executionGraph.enableCheckpointing(
 				chkConfig,
 				triggerVertices,

@@ -1270,16 +1270,19 @@ public class CheckpointCoordinator {
 			sharedStateRegistry = sharedStateRegistryFactory.create(executor);
 
 			// Recover the checkpoints, TODO this could be done only when there is a new leader, not on each recovery
+			// 恢复checkpoint
 			completedCheckpointStore.recover();
 
 			// Now, we re-register all (shared) states from the checkpoint store with the new registry
 			for (CompletedCheckpoint completedCheckpoint : completedCheckpointStore.getAllCheckpoints()) {
+				// 注册共享状态之后恢复
 				completedCheckpoint.registerSharedStatesAfterRestored(sharedStateRegistry);
 			}
 
 			LOG.debug("Status of the shared state registry of job {} after restore: {}.", job, sharedStateRegistry);
 
 			// Restore from the latest checkpoint
+			// 获取最后的checkpoint
 			CompletedCheckpoint latest = completedCheckpointStore.getLatestCheckpoint(isPreferCheckpointForRecovery);
 
 			if (latest == null) {
@@ -1298,9 +1301,11 @@ public class CheckpointCoordinator {
 			// re-assign the task states
 			final Map<OperatorID, OperatorState> operatorStates = latest.getOperatorStates();
 
+			// 用于恢复savepoint和恢复checkpoint
 			StateAssignmentOperation stateAssignmentOperation =
 					new StateAssignmentOperation(latest.getCheckpointID(), tasks, operatorStates, allowNonRestoredState);
 
+			// 分配状态
 			stateAssignmentOperation.assignStates();
 
 			// call master hooks for restore. we currently call them also on "regional restore" because
@@ -1358,20 +1363,25 @@ public class CheckpointCoordinator {
 		LOG.info("Starting job {} from savepoint {} ({})",
 				job, savepointPointer, (allowNonRestored ? "allowing non restored state" : ""));
 
+		// 解析checkpoint path
 		final CompletedCheckpointStorageLocation checkpointLocation = checkpointStorage.resolveCheckpoint(savepointPointer);
 
 		// Load the savepoint as a checkpoint into the system
+		// 加载校验checkpoint
 		CompletedCheckpoint savepoint = Checkpoints.loadAndValidateCheckpoint(
 				job, tasks, checkpointLocation, userClassLoader, allowNonRestored);
 
+		// 添加到完成的checkpoint存储，底层存储为双端队列
 		completedCheckpointStore.addCheckpoint(savepoint);
 
 		// Reset the checkpoint ID counter
 		long nextCheckpointId = savepoint.getCheckpointID() + 1;
+		// 设置下次checkpointid
 		checkpointIdCounter.setCount(nextCheckpointId);
 
 		LOG.info("Reset the checkpoint ID of job {} to {}.", job, nextCheckpointId);
 
+		// 恢复最后checkpoint状态
 		return restoreLatestCheckpointedStateInternal(new HashSet<>(tasks.values()), true, true, allowNonRestored);
 	}
 

@@ -103,6 +103,7 @@ public class Checkpoints {
 		if (magicNumber == HEADER_MAGIC_NUMBER) {
 			final int version = in.readInt();
 			final MetadataSerializer serializer = MetadataSerializers.getSerializer(version);
+			// 反序列化出CheckpointMetadata
 			return serializer.deserialize(in, classLoader, externalPointer);
 		}
 		else {
@@ -132,6 +133,7 @@ public class Checkpoints {
 		final CheckpointMetadata checkpointMetadata;
 		try (InputStream in = metadataHandle.openInputStream()) {
 			DataInputStream dis = new DataInputStream(in);
+			// 加载checkpoint metadata
 			checkpointMetadata = loadCheckpointMetadata(dis, classLoader, checkpointPointer);
 		}
 
@@ -145,6 +147,7 @@ public class Checkpoints {
 		}
 
 		// (2) validate it (parallelism, etc)
+		// 校验并行度是否变化
 		HashMap<OperatorID, OperatorState> operatorStates = new HashMap<>(checkpointMetadata.getOperatorStates().size());
 		for (OperatorState operatorState : checkpointMetadata.getOperatorStates()) {
 

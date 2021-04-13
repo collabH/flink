@@ -903,9 +903,11 @@ public class StreamingJobGraphGenerator {
 		List<JobVertexID> commitVertices = new ArrayList<>(jobVertices.size());
 
 		for (JobVertex vertex : jobVertices.values()) {
+			// 如果是输入Node，也就是JobEdge为null，放入triggerVertices
 			if (vertex.isInputVertex()) {
 				triggerVertices.add(vertex.getID());
 			}
+			// 全部放入提交commitVertices和ackVertices
 			commitVertices.add(vertex.getID());
 			ackVertices.add(vertex.getID());
 		}
@@ -973,6 +975,7 @@ public class StreamingJobGraphGenerator {
 
 		//  --- done, put it all together ---
 
+		// checkpoint转换
 		JobCheckpointingSettings settings = new JobCheckpointingSettings(
 			triggerVertices,
 			ackVertices,

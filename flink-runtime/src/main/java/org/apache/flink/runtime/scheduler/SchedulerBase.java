@@ -253,6 +253,7 @@ public abstract class SchedulerBase implements SchedulerNG {
 
 		final CheckpointCoordinator checkpointCoordinator = newExecutionGraph.getCheckpointCoordinator();
 
+		// 恢复checkpoint状态
 		if (checkpointCoordinator != null) {
 			// check whether we find a valid checkpoint
 			if (!checkpointCoordinator.restoreLatestCheckpointedStateToAll(
@@ -260,6 +261,7 @@ public abstract class SchedulerBase implements SchedulerNG {
 				false)) {
 
 				// check whether we can restore from a savepoint
+				// 检查恢复状态
 				tryRestoreExecutionGraphFromSavepoint(newExecutionGraph, jobGraph.getSavepointRestoreSettings());
 			}
 		}
@@ -317,6 +319,7 @@ public abstract class SchedulerBase implements SchedulerNG {
 		if (savepointRestoreSettings.restoreSavepoint()) {
 			final CheckpointCoordinator checkpointCoordinator = executionGraphToRestore.getCheckpointCoordinator();
 			if (checkpointCoordinator != null) {
+				// 恢复savepoint
 				checkpointCoordinator.restoreSavepoint(
 					savepointRestoreSettings.getRestorePath(),
 					savepointRestoreSettings.allowNonRestoredState(),

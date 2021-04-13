@@ -96,6 +96,7 @@ public final class KeyGroupRangeAssignment {
 		Preconditions.checkArgument(maxParallelism >= parallelism,
 			"Maximum parallelism must not be smaller than parallelism.");
 
+		// key分组范围分配
 		int start = ((operatorIndex * maxParallelism + parallelism - 1) / parallelism);
 		int end = ((operatorIndex + 1) * maxParallelism - 1) / parallelism;
 		return new KeyGroupRange(start, end);
