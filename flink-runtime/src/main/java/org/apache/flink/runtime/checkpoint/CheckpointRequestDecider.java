@@ -129,6 +129,7 @@ class CheckpointRequestDecider {
 	}
 
 	/**
+	 * 穿着request执行
 	 * Choose the next {@link CheckpointTriggerRequest request} to execute based on the provided candidate and the
 	 * current state. Acquires a lock and may update the state.
 	 * @return request that should be executed

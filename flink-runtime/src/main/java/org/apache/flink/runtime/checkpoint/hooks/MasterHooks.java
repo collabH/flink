@@ -42,6 +42,7 @@ import java.util.concurrent.Executor;
 
 /**
  * Collection of methods to deal with checkpoint master hooks.
+ * checkpoint hook函数
  */
 public class MasterHooks {
 
