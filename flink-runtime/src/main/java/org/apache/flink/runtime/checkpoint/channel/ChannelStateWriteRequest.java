@@ -49,6 +49,13 @@ interface ChannelStateWriteRequest {
 		return new CheckpointInProgressRequest("completeOutput", checkpointId, ChannelStateCheckpointWriter::completeOutput, false);
 	}
 
+	/**
+	 * 写数据到buffer中
+	 * @param checkpointId
+	 * @param info
+	 * @param iterator
+	 * @return
+	 */
 	static ChannelStateWriteRequest write(long checkpointId, InputChannelInfo info, CloseableIterator<Buffer> iterator) {
 		return buildWriteRequest(checkpointId, "writeInput", iterator, (writer, buffer) -> writer.writeInput(info, buffer));
 	}

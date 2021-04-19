@@ -23,6 +23,8 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
+ * 最终的物理执行层inputchannel信息，包含一个inputgate index和inputchannel index，gate和channel 1对多
+ * 标识inputChannel给定的一个子任务
  * Identifies {@link org.apache.flink.runtime.io.network.partition.consumer.InputChannel} in a given subtask.
  * Note that {@link org.apache.flink.runtime.io.network.partition.consumer.InputChannelID InputChannelID}
  * can not be used because it is generated randomly.
@@ -31,7 +33,9 @@ import java.util.Objects;
 public class InputChannelInfo implements Serializable {
 	private static final long serialVersionUID = 1L;
 
+	// inputgate index
 	private final int gateIdx;
+	// inputChannel index
 	private final int inputChannelIdx;
 
 	public InputChannelInfo(int gateIdx, int inputChannelIdx) {

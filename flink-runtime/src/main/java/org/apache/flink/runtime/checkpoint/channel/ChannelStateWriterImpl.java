@@ -100,8 +100,10 @@ public class ChannelStateWriterImpl implements ChannelStateWriter {
 	public void start(long checkpointId, CheckpointOptions checkpointOptions) {
 		LOG.debug("{} starting checkpoint {} ({})", taskName, checkpointId, checkpointOptions);
 		ChannelStateWriteResult result = new ChannelStateWriteResult();
+		// 发送checkpoint开启请求
 		ChannelStateWriteResult put = results.computeIfAbsent(checkpointId, id -> {
 			Preconditions.checkState(results.size() < maxCheckpoints, String.format("%s can't start %d, results.size() > maxCheckpoints: %d > %d", taskName, checkpointId, results.size(), maxCheckpoints));
+			// 发送请求
 			enqueue(new CheckpointStartRequest(checkpointId, result, checkpointOptions.getTargetLocation()), false);
 			return result;
 		});
@@ -116,6 +118,7 @@ public class ChannelStateWriterImpl implements ChannelStateWriter {
 			checkpointId,
 			info,
 			startSeqNum);
+		// 将inputChannel信息写入buffer迭代器
 		enqueue(write(checkpointId, info, iterator), false);
 	}
 
@@ -128,12 +131,14 @@ public class ChannelStateWriterImpl implements ChannelStateWriter {
 			info,
 			startSeqNum,
 			data == null ? 0 : data.length);
+		// 发送写请求
 		enqueue(write(checkpointId, info, data), false);
 	}
 
 	@Override
 	public void finishInput(long checkpointId) {
 		LOG.debug("{} finishing input data, checkpoint {}", taskName, checkpointId);
+		// 发送完成请求input
 		enqueue(completeInput(checkpointId), false);
 	}
 
@@ -146,6 +151,7 @@ public class ChannelStateWriterImpl implements ChannelStateWriter {
 	@Override
 	public void abort(long checkpointId, Throwable cause, boolean cleanup) {
 		LOG.debug("{} aborting, checkpoint {}", taskName, checkpointId);
+		// 中断开始的checkpoint和未开始的
 		enqueue(ChannelStateWriteRequest.abort(checkpointId, cause), true); // abort already started
 		enqueue(ChannelStateWriteRequest.abort(checkpointId, cause), false); // abort enqueued but not started
 		if (cleanup) {
@@ -178,6 +184,7 @@ public class ChannelStateWriterImpl implements ChannelStateWriter {
 			if (atTheFront) {
 				executor.submitPriority(request);
 			} else {
+				// 提交checkpount请求
 				executor.submit(request);
 			}
 		} catch (Exception e) {

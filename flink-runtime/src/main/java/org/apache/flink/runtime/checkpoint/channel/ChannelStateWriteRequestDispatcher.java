@@ -17,10 +17,15 @@
 
 package org.apache.flink.runtime.checkpoint.channel;
 
+/**
+ * 状态写请求分发器
+ */
 interface ChannelStateWriteRequestDispatcher {
 
+	// 分发请求
 	void dispatch(ChannelStateWriteRequest request) throws Exception;
 
+	// 错误
 	void fail(Throwable cause);
 
 	ChannelStateWriteRequestDispatcher NO_OP = new ChannelStateWriteRequestDispatcher() {

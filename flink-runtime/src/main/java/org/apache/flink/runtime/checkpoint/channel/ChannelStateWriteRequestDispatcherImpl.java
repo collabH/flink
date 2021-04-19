@@ -35,6 +35,7 @@ import static org.apache.flink.util.Preconditions.checkState;
 final class ChannelStateWriteRequestDispatcherImpl implements ChannelStateWriteRequestDispatcher {
 	private static final Logger LOG = LoggerFactory.getLogger(ChannelStateWriteRequestDispatcherImpl.class);
 
+	// 状态checkpoint写入器
 	private final Map<Long, ChannelStateCheckpointWriter> writers; // limited indirectly by results max size
 	private final CheckpointStorageWorkerView streamFactoryResolver;
 	private final ChannelStateSerializer serializer;
@@ -49,6 +50,7 @@ final class ChannelStateWriteRequestDispatcherImpl implements ChannelStateWriteR
 	public void dispatch(ChannelStateWriteRequest request) throws Exception {
 		LOG.debug("process {}", request);
 		try {
+			//分发请求
 			dispatchInternal(request);
 		} catch (Exception e) {
 			try {
@@ -63,6 +65,7 @@ final class ChannelStateWriteRequestDispatcherImpl implements ChannelStateWriteR
 	private void dispatchInternal(ChannelStateWriteRequest request) throws Exception {
 		if (request instanceof CheckpointStartRequest) {
 			checkState(!writers.containsKey(request.getCheckpointId()), "writer not found for request " + request);
+			// 构造checkpointstart请求
 			writers.put(request.getCheckpointId(), buildWriter((CheckpointStartRequest) request));
 		} else if (request instanceof CheckpointInProgressRequest) {
 			ChannelStateCheckpointWriter writer = writers.get(request.getCheckpointId());

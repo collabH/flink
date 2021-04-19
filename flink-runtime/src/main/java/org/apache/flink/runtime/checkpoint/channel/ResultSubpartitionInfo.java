@@ -32,7 +32,9 @@ import java.util.Objects;
 public class ResultSubpartitionInfo implements Serializable {
 	private static final long serialVersionUID = 1L;
 
+	// partition index 一般一个并行度一个
 	private final int partitionIdx;
+	// sub partition index 一般为上游和下游并行度的乘积
 	private final int subPartitionIdx;
 
 	public ResultSubpartitionInfo(int partitionIdx, int subPartitionIdx) {

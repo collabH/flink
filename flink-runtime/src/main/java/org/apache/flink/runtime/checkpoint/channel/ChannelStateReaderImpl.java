@@ -57,8 +57,15 @@ import static org.apache.flink.util.Preconditions.checkState;
 public class ChannelStateReaderImpl implements ChannelStateReader {
 	private static final Logger log = LoggerFactory.getLogger(ChannelStateReaderImpl.class);
 
+
+	/**
+	 * 俩个结果集更执行图有关，最终执行图从task-》inputchannel-》ResultSubpartition
+	 */
+	// 输出管道处理器
 	private final Map<InputChannelInfo, ChannelStateStreamReader> inputChannelHandleReaders;
+	// 结果子分区处理器
 	private final Map<ResultSubpartitionInfo, ChannelStateStreamReader> resultSubpartitionHandleReaders;
+	// 是否关闭
 	private boolean isClosed = false;
 
 	public ChannelStateReaderImpl(TaskStateSnapshot snapshot) {
@@ -97,6 +104,7 @@ public class ChannelStateReaderImpl implements ChannelStateReader {
 		Preconditions.checkState(!isClosed, "reader is closed");
 		log.debug("readInputData, resultSubpartitionInfo: {} , buffer {}", info, buffer);
 		ChannelStateStreamReader reader = inputChannelHandleReaders.get(info);
+		// 数据放入Buffer
 		return reader == null ? ReadResult.NO_MORE_DATA : reader.readInto(buffer);
 	}
 

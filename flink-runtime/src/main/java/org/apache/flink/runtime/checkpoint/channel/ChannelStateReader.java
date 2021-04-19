@@ -30,6 +30,7 @@ public interface ChannelStateReader extends AutoCloseable {
 
 	/**
 	 * Status of reading result.
+	 * 读取状态的结果
 	 */
 	enum ReadResult { HAS_MORE_DATA, NO_MORE_DATA }
 
@@ -53,6 +54,9 @@ public interface ChannelStateReader extends AutoCloseable {
 	@Override
 	void close() throws Exception;
 
+	/**
+	 * 不进行操作
+	 */
 	ChannelStateReader NO_OP = new ChannelStateReader() {
 
 		@Override
