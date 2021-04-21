@@ -32,6 +32,7 @@ import java.io.IOException;
 public interface MetadataSerializer extends Versioned {
 
 	/**
+	 * 根据输入流反序列化savepoint
 	 * Deserializes a savepoint from an input stream.
 	 *
 	 * @param dis Input stream to deserialize savepoint from

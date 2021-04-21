@@ -51,6 +51,7 @@ public class MasterHooks {
 	// ------------------------------------------------------------------------
 
 	/**
+	 * 重置master hooks
 	 * Resets the master hooks.
 	 *
 	 * @param hooks The hooks to reset
@@ -116,6 +117,7 @@ public class MasterHooks {
 
 		try {
 			// call the hook!
+			// 触发checkpoint
 			final CompletableFuture<T> resultFuture =
 				hook.triggerCheckpoint(checkpointId, timestamp, executor);
 
@@ -208,6 +210,7 @@ public class MasterHooks {
 				if (hook != null) {
 					log.debug("Found state to restore for hook '{}'", name);
 
+					// 反序列化状态
 					Object deserializedState = deserializeState(state, hook);
 					hooksAndStates.add(new Tuple2<>(hook, deserializedState));
 				}

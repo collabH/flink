@@ -95,6 +95,7 @@ public abstract class MetadataV2V3SerializerBase {
 	//  (De)serialization entry points
 	// ------------------------------------------------------------------------
 
+	// 序列化元数据
 	protected void serializeMetadata(CheckpointMetadata checkpointMetadata, DataOutputStream dos) throws IOException {
 		// first: checkpoint ID
 		dos.writeLong(checkpointMetadata.getCheckpointId());
@@ -111,6 +112,7 @@ public abstract class MetadataV2V3SerializerBase {
 		dos.writeInt(operatorStates.size());
 
 		for (OperatorState operatorState : operatorStates) {
+			// 序列化算子状态
 			serializeOperatorState(operatorState, dos);
 		}
 	}
@@ -162,6 +164,7 @@ public abstract class MetadataV2V3SerializerBase {
 
 	protected void serializeMasterState(MasterState state, DataOutputStream dos) throws IOException {
 		// magic number for error detection
+		// 写入magic number
 		dos.writeInt(MASTER_STATE_MAGIC_NUMBER);
 
 		// for safety, we serialize first into an array and then write the array and its

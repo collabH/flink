@@ -109,7 +109,9 @@ public class MetadataV3Serializer extends MetadataV2V3SerializerBase implements 
 	@Override
 	protected void serializeSubtaskState(OperatorSubtaskState subtaskState, DataOutputStream dos) throws IOException {
 		super.serializeSubtaskState(subtaskState, dos);
+		//序列化inputChannel
 		serializeCollection(subtaskState.getInputChannelState(), dos, this::serializeInputChannelStateHandle);
+		// 序列化rss
 		serializeCollection(subtaskState.getResultSubpartitionState(), dos, this::serializeResultSubpartitionStateHandle);
 	}
 
