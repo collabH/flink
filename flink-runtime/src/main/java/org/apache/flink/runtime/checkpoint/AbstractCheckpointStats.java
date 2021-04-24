@@ -43,12 +43,15 @@ public abstract class AbstractCheckpointStats implements Serializable {
 	final long triggerTimestamp;
 
 	/** {@link TaskStateStats} accessible by their ID. */
+	// 每个task指标描述，jobVertex是算子id
 	final Map<JobVertexID, TaskStateStats> taskStats;
 
 	/** Total number of subtasks over all tasks. */
+	// 所有任务子任务总数
 	final int numberOfSubtasks;
 
 	/** Properties of the checkpoint. */
+	// ck配置
 	final CheckpointProperties props;
 
 	AbstractCheckpointStats(
