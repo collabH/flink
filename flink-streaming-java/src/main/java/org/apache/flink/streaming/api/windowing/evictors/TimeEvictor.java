@@ -76,7 +76,7 @@ public class TimeEvictor<W extends Window> implements Evictor<Object, W> {
 		// 获取可以读取的timestamp
 		long evictCutoff = currentTime - windowSize;
 
-		// 遍历删除大于evictCutoff的记录
+		// 遍历删除小于等于evictCutoff的记录，只要windowSize内的记录
 		for (Iterator<TimestampedValue<Object>> iterator = elements.iterator(); iterator.hasNext(); ) {
 			TimestampedValue<Object> record = iterator.next();
 			if (record.getTimestamp() <= evictCutoff) {
